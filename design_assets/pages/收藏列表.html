@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收藏列表</title>
+    <style id="theme-vars">
+/* AI Kitchen Assistant - Warm Natural Style */
+:root {
+  /* Brand Primary - Warm Orange */
+  --color-primary: #E8743B;
+  --color-primary-light: #F09B6E;
+  --color-primary-lighter: #F5C49E;
+  --color-primary-lightest: #FBE8D6;
+  --color-primary-dark: #C45E2A;
+  --color-primary-darker: #9A4A20;
+
+  /* Brand Secondary - Warm Brown */
+  --color-secondary: #8B5E3C;
+  --color-secondary-light: #B07D55;
+  --color-secondary-lighter: #D4A87A;
+
+  /* Neutrals - Warm Toned */
+  --color-bg: #FEFAF5;
+  --color-bg-warm: #FFF8F0;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFCF8;
+  --color-surface-overlay: #F5EDE4;
+  --color-border: #E8DDD0;
+  --color-border-light: #F0E8DE;
+  --color-text-primary: #3D2B1F;
+  --color-text-secondary: #6B5744;
+  --color-text-tertiary: #9A8B7A;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+
+  /* State Colors */
+  --state-success: #4A9D5B;
+  --state-success-bg: #E8F5EA;
+  --state-warning: #E8A33D;
+  --state-warning-bg: #FFF4E0;
+  --state-error: #D94B4B;
+  --state-error-bg: #FDE8E8;
+  --state-info: #5B8EC9;
+  --state-info-bg: #E8F0FA;
+
+  /* Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - surface-first, subtle */
+  --shadow-sm: 0 1px 3px rgba(61, 43, 31, 0.04);
+  --shadow-md: 0 2px 8px rgba(61, 43, 31, 0.06);
+  --shadow-lg: 0 4px 16px rgba(61, 43, 31, 0.08);
+  --shadow-card: 0 1px 4px rgba(61, 43, 31, 0.05);
+  --shadow-card-hover: 0 4px 12px rgba(61, 43, 31, 0.1);
+  --shadow-float: 0 8px 32px rgba(61, 43, 31, 0.12);
+
+  /* Typography */
+  --font-display: 'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.6875rem;     /* 11px */
+  --text-sm: 0.8125rem;     /* 13px */
+  --text-base: 0.9375rem;    /* 15px */
+  --text-md: 1rem;           /* 16px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.3125rem;     /* 21px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Z-index */
+  --z-above: 10;
+  --z-overlay: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* Typography Classes */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-primary-color { color: var(--color-primary); }
+.text-secondary-color { color: var(--color-secondary); }
+.text-warm { color: var(--color-text-primary); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="mx-auto w-full max-w-[375px] min-h-screen flex flex-col" style="background: var(--color-bg);">
+
+      <!-- Top Bar -->
+      <header class="flex items-center justify-between px-4 pt-3 pb-2" style="background: var(--color-surface);">
+        <button data-dom-id="back-from-fav" class="flex items-center justify-center w-9 h-9 rounded-full" style="background: var(--color-surface-overlay);">
+          <i data-lucide="chevron-left" class="w-5 h-5" style="color: var(--color-text-primary);"></i>
+        </button>
+        <h1 class="text-lg font-semibold" style="color: var(--color-text-primary); font-family: var(--font-body);">我的收藏</h1>
+        <button class="text-sm font-medium" style="color: var(--color-primary);">管理</button>
+      </header>
+
+      <!-- Filter / Sort Row -->
+      <div class="flex items-center justify-between px-4 pt-2 pb-3">
+        <span class="text-xs" style="color: var(--color-text-tertiary);">共 12 个食谱</span>
+        <button class="flex items-center gap-1 text-xs font-medium" style="color: var(--color-text-secondary);">
+          最近收藏
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5" style="color: var(--color-text-tertiary);"></i>
+        </button>
+      </div>
+
+      <!-- Tab Filters -->
+      <div class="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+        <button class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold" style="background: var(--color-primary); color: var(--color-text-on-primary);">全部</button>
+        <button class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-surface-overlay); color: var(--color-text-secondary);">家常菜</button>
+        <button class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-surface-overlay); color: var(--color-text-secondary);">快手菜</button>
+        <button class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-surface-overlay); color: var(--color-text-secondary);">汤煲</button>
+      </div>
+
+      <!-- Favorites Recipe List -->
+      <div class="flex-1 px-4 pb-4">
+
+        <!-- Card 1: 青椒肉丝 -->
+        <a data-dom-id="link-fav-recipe" href="#" class="flex items-center gap-3 p-3 rounded-xl mb-3 no-underline" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <img src="../assets/image_5_yi19x4.jpg" alt="青椒肉丝" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-bold truncate" style="color: var(--color-text-primary);">青椒肉丝</h3>
+            <p class="text-xs mt-1 flex items-center gap-0.5" style="color: var(--color-text-secondary);">15分钟 · 简单 · <i data-lucide="star" style="width:10px;height:10px;color:var(--state-warning);fill:var(--state-warning);"></i>4.8</p>
+            <p class="text-xs mt-1.5" style="color: var(--color-text-tertiary);">收藏于 3天前</p>
+          </div>
+          <button class="flex-shrink-0 flex items-center justify-center w-8 h-8">
+            <i data-lucide="heart" class="w-5 h-5" style="color: var(--state-error); fill: var(--state-error);"></i>
+          </button>
+        </a>
+
+        <!-- Card 2: 山药药膳鸡汤 -->
+        <a data-dom-id="link-fav-recipe" href="#" class="flex items-center gap-3 p-3 rounded-xl mb-3 no-underline" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <img src="../assets/image_6_yi19x4.jpg" alt="山药药膳鸡汤" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-bold truncate" style="color: var(--color-text-primary);">山药药膳鸡汤</h3>
+            <p class="text-xs mt-1 flex items-center gap-0.5" style="color: var(--color-text-secondary);">90分钟 · 中等 · <i data-lucide="star" style="width:10px;height:10px;color:var(--state-warning);fill:var(--state-warning);"></i>4.9</p>
+            <p class="text-xs mt-1.5" style="color: var(--color-text-tertiary);">收藏于 1周前</p>
+          </div>
+          <button class="flex-shrink-0 flex items-center justify-center w-8 h-8">
+            <i data-lucide="heart" class="w-5 h-5" style="color: var(--state-error); fill: var(--state-error);"></i>
+          </button>
+        </a>
+
+        <!-- Card 3: 蒜蓉西兰花 (placeholder image) -->
+        <a data-dom-id="link-fav-recipe" href="#" class="flex items-center gap-3 p-3 rounded-xl mb-3 no-underline" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <img src="../assets/image_12_yi19x4.jpg" alt="蒜蓉西兰花" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-bold truncate" style="color: var(--color-text-primary);">蒜蓉西兰花</h3>
+            <p class="text-xs mt-1 flex items-center gap-0.5" style="color: var(--color-text-secondary);">12分钟 · 简单 · <i data-lucide="star" style="width:10px;height:10px;color:var(--state-warning);fill:var(--state-warning);"></i>4.6</p>
+            <p class="text-xs mt-1.5" style="color: var(--color-text-tertiary);">收藏于 2周前</p>
+          </div>
+          <button class="flex-shrink-0 flex items-center justify-center w-8 h-8">
+            <i data-lucide="heart" class="w-5 h-5" style="color: var(--state-error); fill: var(--state-error);"></i>
+          </button>
+        </a>
+
+        <!-- Card 4: 番茄蛋汤 (placeholder image) -->
+        <a data-dom-id="link-fav-recipe" href="#" class="flex items-center gap-3 p-3 rounded-xl mb-3 no-underline" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <img src="../assets/image_11_yi19x4.jpg" alt="番茄蛋汤" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-bold truncate" style="color: var(--color-text-primary);">番茄蛋汤</h3>
+            <p class="text-xs mt-1 flex items-center gap-0.5" style="color: var(--color-text-secondary);">10分钟 · 简单 · <i data-lucide="star" style="width:10px;height:10px;color:var(--state-warning);fill:var(--state-warning);"></i>4.7</p>
+            <p class="text-xs mt-1.5" style="color: var(--color-text-tertiary);">收藏于 1月前</p>
+          </div>
+          <button class="flex-shrink-0 flex items-center justify-center w-8 h-8">
+            <i data-lucide="heart" class="w-5 h-5" style="color: var(--state-error); fill: var(--state-error);"></i>
+          </button>
+        </a>
+
+      </div>
+
+      <!-- Bottom Hint -->
+      <div class="flex items-center justify-center gap-1.5 pb-6 pt-2">
+        <i data-lucide="move-horizontal" class="w-3.5 h-3.5" style="color: var(--color-text-tertiary);"></i>
+        <span class="text-xs" style="color: var(--color-text-tertiary);">左滑可取消收藏</span>
+      </div>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

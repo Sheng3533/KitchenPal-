@@ -1,0 +1,66 @@
+[200] recipe/list
+   code=200 list_len=15
+[200] recipe/hero
+   code=200 list_len=2
+[200] recipe/categories
+   code=200 list_len=7
+[200] recipe/1
+   code=200 data_keys=['calories', 'category', 'cookTimeMin', 'difficulty', 'id', 'imageUrl', 'ingredientsJson', 'isHero', 'matchPercent', 'rating', 'stepsJson', 'subtitle', 'tags', 'title']
+[200] recipe/category 家常菜
+   code=200 list_len=4
+[200] recipe/keyword 番茄
+   code=200 list_len=3
+[200] recipe/999 (不存在)
+   code=500 data_keys=NoneType
+[200] user/1
+   code=200 data_keys=['avatar', 'cookingCount', 'cookingNotify', 'createdAt', 'darkMode', 'favoriteCount', 'id', 'nickname', 'phone', 'status', 'streakDays', 'tastePreferences', 'updatedAt']
+[200] user/list
+   code=200 list_len=11
+[200] user/1/profile
+   code=200 data_keys=['avatar', 'cookingCount', 'cookingNotify', 'createdAt', 'darkMode', 'favoriteCount', 'id', 'nickname', 'phone', 'status', 'streakDays', 'tastePreferences', 'updatedAt']
+[200] favorite/list/1
+   code=200 list_len=4
+[200] favorite/ids/1
+   code=200 list_len=4
+[200] notification/1
+   code=200 list_len=5
+[200] notification/unread/1
+   code=200 data_keys=int
+[200] history/1
+   code=200 list_len=5
+[200] stats/user/1
+   code=200 data_keys=['totalCooking', 'streakDays', 'nutritionTrend', 'totalFavorites', 'weeklyCooking', 'totalCalories', 'topCategories']
+[200] chef/list
+   code=200 list_len=0
+[200] content/published
+   code=200 list_len=0
+[200] video/published
+   code=200 list_len=0
+[200] feedback/list
+   code=200 data_keys=['total', 'size', 'page', 'list']
+[200] app/version/check
+   code=200 data_keys=['hasUpdate', 'updateUrl', 'changelog', 'version']
+[400] app/agreement
+   keys=['timestamp', 'status', 'error', 'path']
+[200] scan/logs/1
+   code=200 data_keys=['detectedIngredients', 'id', 'scanTime', 'status', 'suggestedRecipeIds', 'userId']
+[200] user/login 13800138000
+   code=200 data_keys=['user', 'token']
+[200] user/register 新用户
+   code=200 data_keys=['avatar', 'cookingCount', 'cookingNotify', 'createdAt', 'darkMode', 'favoriteCount', 'id', 'nickname', 'phone', 'status', 'streakDays', 'tastePreferences', 'updatedAt']
+[200] favorite/toggle 新增收藏
+   code=200 data_keys=NoneType
+[200] favorite/list/新用户
+   code=200 list_len=1
+[200] history/add
+   code=200 data_keys=['cookDate', 'cookTime', 'createdAt', 'durationMin', 'id', 'rating', 'recipeId', 'recipeImageUrl', 'recipeTitle', 'score', 'userId']
+[200] history/新用户
+   code=200 list_len=1
+[200] notification/read/1
+   code=200 data_keys=NoneType
+[400] feedback/submit
+   keys=['timestamp', 'status', 'error', 'path']
+[200] assistant/chat
+   code=200 data_keys=['reply', 'intent']
+[200] scan/recognize
+   code=200 data_keys=['ingredients', 'suggestedRecipeIds']

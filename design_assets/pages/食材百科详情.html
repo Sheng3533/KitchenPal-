@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食材百科详情</title>
+    <style id="theme-vars">
+/* AI Kitchen Assistant - Warm Natural Style */
+:root {
+  /* Brand Primary - Warm Orange */
+  --color-primary: #E8743B;
+  --color-primary-light: #F09B6E;
+  --color-primary-lighter: #F5C49E;
+  --color-primary-lightest: #FBE8D6;
+  --color-primary-dark: #C45E2A;
+  --color-primary-darker: #9A4A20;
+
+  /* Brand Secondary - Warm Brown */
+  --color-secondary: #8B5E3C;
+  --color-secondary-light: #B07D55;
+  --color-secondary-lighter: #D4A87A;
+
+  /* Neutrals - Warm Toned */
+  --color-bg: #FEFAF5;
+  --color-bg-warm: #FFF8F0;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFCF8;
+  --color-surface-overlay: #F5EDE4;
+  --color-border: #E8DDD0;
+  --color-border-light: #F0E8DE;
+  --color-text-primary: #3D2B1F;
+  --color-text-secondary: #6B5744;
+  --color-text-tertiary: #9A8B7A;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+
+  /* State Colors */
+  --state-success: #4A9D5B;
+  --state-success-bg: #E8F5EA;
+  --state-warning: #E8A33D;
+  --state-warning-bg: #FFF4E0;
+  --state-error: #D94B4B;
+  --state-error-bg: #FDE8E8;
+  --state-info: #5B8EC9;
+  --state-info-bg: #E8F0FA;
+
+  /* Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - surface-first, subtle */
+  --shadow-sm: 0 1px 3px rgba(61, 43, 31, 0.04);
+  --shadow-md: 0 2px 8px rgba(61, 43, 31, 0.06);
+  --shadow-lg: 0 4px 16px rgba(61, 43, 31, 0.08);
+  --shadow-card: 0 1px 4px rgba(61, 43, 31, 0.05);
+  --shadow-card-hover: 0 4px 12px rgba(61, 43, 31, 0.1);
+  --shadow-float: 0 8px 32px rgba(61, 43, 31, 0.12);
+
+  /* Typography */
+  --font-display: 'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.6875rem;     /* 11px */
+  --text-sm: 0.8125rem;     /* 13px */
+  --text-base: 0.9375rem;    /* 15px */
+  --text-md: 1rem;           /* 16px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.3125rem;     /* 21px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Z-index */
+  --z-above: 10;
+  --z-overlay: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* Typography Classes */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-primary-color { color: var(--color-primary); }
+.text-secondary-color { color: var(--color-secondary); }
+.text-warm { color: var(--color-text-primary); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-bg); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="max-w-[375px] mx-auto min-h-screen relative pb-8" style="background: var(--color-bg);">
+
+      <!-- Top Bar -->
+      <div class="flex items-center justify-between px-4 py-3" style="background: var(--color-bg); position: sticky; top: 0; z-index: var(--z-above);">
+        <a href="#" data-dom-id="back-ingredient" class="flex items-center justify-center w-9 h-9 rounded-full" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+          <i data-lucide="arrow-left" class="w-[18px] h-[18px]" style="color: var(--color-text-primary);"></i>
+        </a>
+        <span class="text-[15px] font-semibold" style="color: var(--color-text-primary);">食材百科</span>
+        <div class="w-9 h-9"></div>
+      </div>
+
+      <!-- Hero Section -->
+      <div class="relative mx-0">
+        <img src="../assets/image_0_yi19x4.jpg" alt="番茄" class="w-full h-52 object-cover rounded-b-3xl" />
+        <!-- Gradient Overlay -->
+        <div class="absolute inset-0 rounded-b-3xl" style="background: linear-gradient(to top, rgba(61,43,31,0.7) 0%, rgba(61,43,31,0.1) 50%, transparent 100%);"></div>
+        <!-- Overlaid Text -->
+        <div class="absolute bottom-0 left-0 right-0 px-5 pb-5">
+          <h1 class="text-2xl font-bold text-white mb-1">番茄</h1>
+          <p class="text-white/80 text-sm mb-2">西红柿 · 番茄</p>
+          <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-white" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);">
+            <i data-lucide="sprout" style="width:12px;height:12px;color:white;"></i>
+            <span>时令：夏季</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Info Row -->
+      <div class="mx-4 -mt-4 relative z-10 grid grid-cols-3 gap-2 p-4 rounded-xl" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+        <div class="flex flex-col items-center gap-1.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background: var(--state-warning-bg);">
+            <i data-lucide="flame" class="w-4 h-4" style="color: var(--state-warning);"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-xs font-semibold" style="color: var(--color-text-primary);">热量</p>
+            <p class="text-[11px]" style="color: var(--color-text-tertiary);">18kcal/100g</p>
+          </div>
+        </div>
+        <div class="flex flex-col items-center gap-1.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background: var(--state-info-bg);">
+            <i data-lucide="droplets" class="w-4 h-4" style="color: var(--state-info);"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-xs font-semibold" style="color: var(--color-text-primary);">水分</p>
+            <p class="text-[11px]" style="color: var(--color-text-tertiary);">95%</p>
+          </div>
+        </div>
+        <div class="flex flex-col items-center gap-1.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background: var(--color-primary-lightest);">
+            <i data-lucide="zap" class="w-4 h-4" style="color: var(--color-primary);"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-xs font-semibold" style="color: var(--color-text-primary);">维C</p>
+            <p class="text-[11px]" style="color: var(--color-text-tertiary);">14mg</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div class="h-5"></div>
+
+      <!-- 营养价值 Section -->
+      <section class="px-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="flex items-center justify-center w-6 h-6 rounded-md" style="background: var(--color-primary-lightest);">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5" style="color: var(--color-primary);"></i>
+          </div>
+          <h2 class="text-base font-bold" style="color: var(--color-text-primary);">营养价值</h2>
+        </div>
+        <div class="p-4 rounded-xl" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <!-- 维生素C -->
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-sm font-medium" style="color: var(--color-text-primary);">维生素C</span>
+              <span class="text-sm font-bold" style="color: var(--color-primary);">89%</span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background: var(--color-primary-lightest);">
+              <div class="h-full rounded-full" style="width: 89%; background: var(--color-primary);"></div>
+            </div>
+          </div>
+          <!-- 膳食纤维 -->
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-sm font-medium" style="color: var(--color-text-primary);">膳食纤维</span>
+              <span class="text-sm font-bold" style="color: var(--color-primary-light);">62%</span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background: var(--color-primary-lightest);">
+              <div class="h-full rounded-full" style="width: 62%; background: var(--color-primary-lighter);"></div>
+            </div>
+          </div>
+          <!-- 钾 -->
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-sm font-medium" style="color: var(--color-text-primary);">钾</span>
+              <span class="text-sm font-bold" style="color: var(--color-primary-light);">45%</span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background: var(--color-primary-lightest);">
+              <div class="h-full rounded-full" style="width: 45%; background: var(--color-primary-lighter);"></div>
+            </div>
+          </div>
+          <!-- 番茄红素 -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-sm font-medium" style="color: var(--color-text-primary);">番茄红素</span>
+              <span class="text-sm font-bold" style="color: var(--color-primary);">95%</span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background: var(--color-primary-lightest);">
+              <div class="h-full rounded-full" style="width: 95%; background: var(--color-primary);"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Spacer -->
+      <div class="h-5"></div>
+
+      <!-- 保存方法 Section -->
+      <section class="px-4">
+        <h2 class="text-base font-bold mb-3" style="color: var(--color-text-primary);">保存方法</h2>
+        <div class="p-4 rounded-xl" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <div class="flex justify-between items-center">
+            <!-- 冷藏 -->
+            <div class="flex flex-col items-center gap-2">
+              <div class="flex items-center justify-center w-12 h-12 rounded-2xl" style="background: var(--state-success-bg);">
+                <i data-lucide="thermometer" class="w-5 h-5" style="color: var(--state-success);"></i>
+              </div>
+              <div class="flex flex-col items-center">
+                <span class="text-xs font-semibold" style="color: var(--color-text-primary);">冷藏</span>
+                <span class="text-[11px]" style="color: var(--color-text-tertiary);">7天</span>
+              </div>
+            </div>
+            <!-- 冷冻 -->
+            <div class="flex flex-col items-center gap-2">
+              <div class="flex items-center justify-center w-12 h-12 rounded-2xl" style="background: var(--state-info-bg);">
+                <i data-lucide="snowflake" class="w-5 h-5" style="color: var(--state-info);"></i>
+              </div>
+              <div class="flex flex-col items-center">
+                <span class="text-xs font-semibold" style="color: var(--color-text-primary);">冷冻</span>
+                <span class="text-[11px]" style="color: var(--color-text-tertiary);">3月</span>
+              </div>
+            </div>
+            <!-- 常温 -->
+            <div class="flex flex-col items-center gap-2">
+              <div class="flex items-center justify-center w-12 h-12 rounded-2xl" style="background: var(--state-warning-bg);">
+                <i data-lucide="sun" class="w-5 h-5" style="color: var(--state-warning);"></i>
+              </div>
+              <div class="flex flex-col items-center">
+                <span class="text-xs font-semibold" style="color: var(--color-text-primary);">常温</span>
+                <span class="text-[11px]" style="color: var(--color-text-tertiary);">3天</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Spacer -->
+      <div class="h-5"></div>
+
+      <!-- 搭配建议 Section -->
+      <section class="px-4">
+        <h2 class="text-base font-bold mb-3" style="color: var(--color-text-primary);">搭配建议</h2>
+        <div class="p-4 rounded-xl" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+          <!-- 黄金搭档 -->
+          <div class="mb-3">
+            <span class="text-xs font-semibold mb-2 block" style="color: var(--color-text-secondary);">黄金搭档</span>
+            <div class="flex gap-2 flex-wrap">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-primary-lightest); color: var(--color-primary);">牛腩</span>
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-primary-lightest); color: var(--color-primary);">鸡蛋</span>
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium" style="background: var(--color-primary-lightest); color: var(--color-primary);">洋葱</span>
+            </div>
+          </div>
+          <!-- 搭配禁忌 -->
+          <div>
+            <span class="text-xs font-semibold mb-2 block" style="color: var(--color-text-secondary);">搭配禁忌</span>
+            <div class="flex gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium" style="background: var(--state-error-bg); color: var(--state-error);">
+                <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                黄瓜
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Spacer -->
+      <div class="h-5"></div>
+
+      <!-- 相关食谱 Section -->
+      <section class="px-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-base font-bold" style="color: var(--color-text-primary);">相关食谱</h2>
+          <a href="#" data-dom-id="link-ingredient-recipes" class="text-xs font-medium" style="color: var(--color-primary);">查看全部</a>
+        </div>
+        <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+          <!-- Recipe Card 1 -->
+          <a href="#" data-dom-id="link-ingredient-recipes" class="flex-shrink-0 w-[140px] rounded-xl overflow-hidden" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+            <div class="relative">
+              <img src="../assets/image_3_yi19x4.jpg" alt="番茄意面" class="w-full h-[100px] object-cover" />
+              <div class="absolute top-2 right-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style="background: var(--color-primary);">
+                <i data-lucide="star" class="w-2.5 h-2.5"></i>
+                92%匹配
+              </div>
+            </div>
+            <div class="p-2.5">
+              <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">番茄意面</p>
+              <p class="text-[11px] mt-0.5" style="color: var(--color-text-tertiary);">简单快手 · 20分钟</p>
+            </div>
+          </a>
+          <!-- Recipe Card 2 -->
+          <a href="#" data-dom-id="link-ingredient-recipes" class="flex-shrink-0 w-[140px] rounded-xl overflow-hidden" style="background: var(--color-surface); box-shadow: var(--shadow-card);">
+            <div class="relative">
+              <img src="../assets/image_4_yi19x4.jpg" alt="番茄炖牛腩" class="w-full h-[100px] object-cover" />
+              <div class="absolute top-2 right-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style="background: var(--color-primary);">
+                <i data-lucide="star" class="w-2.5 h-2.5"></i>
+                85%匹配
+              </div>
+            </div>
+            <div class="p-2.5">
+              <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">番茄炖牛腩</p>
+              <p class="text-[11px] mt-0.5" style="color: var(--color-text-tertiary);">经典家常 · 90分钟</p>
+            </div>
+          </a>
+        </div>
+      </section>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

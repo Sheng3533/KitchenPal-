@@ -1,0 +1,20 @@
+- main [ref=e4]:
+  - generic [ref=e5]:
+    - heading "AI厨房料理助手" [level=1] [ref=e9]
+    - paragraph [ref=e10]: 管理端平台
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]: 账号
+      - textbox "账号" [ref=e15]:
+        - /placeholder: 请输入账号
+    - generic [ref=e16]:
+      - generic [ref=e17]: 密码
+      - generic [ref=e18]:
+        - textbox "密码" [ref=e19]:
+          - /placeholder: 请输入密码
+        - button [ref=e20] [cursor=pointer]
+    - generic [ref=e24]:
+      - checkbox "记住密码" [checked] [ref=e25] [cursor=pointer]
+      - generic [ref=e26] [cursor=pointer]: 记住密码
+    - button "登录" [ref=e27] [cursor=pointer]
+  - paragraph [ref=e28]: AI Kitchen Assistant Admin Platform

@@ -1,0 +1,903 @@
+-- ============================================================
+-- KitchenPal 厨房小助手 - MySQL 数据库初始化脚本
+-- ============================================================
+
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS kitchenpal_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE kitchenpal_db;
+
+-- ============================================================
+-- 1. 食谱表 recipes
+-- ============================================================
+DROP TABLE IF EXISTS recipes;
+CREATE TABLE recipes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '食谱ID',
+    title VARCHAR(200) NOT NULL COMMENT '食谱名称',
+    subtitle VARCHAR(500) COMMENT '副标题/简介',
+    image_url VARCHAR(500) COMMENT '封面图片URL',
+    rating FLOAT DEFAULT 4.5 COMMENT '评分',
+    cook_time_min INT DEFAULT 30 COMMENT '烹饪时间（分钟）',
+    calories INT DEFAULT 300 COMMENT '卡路里',
+    difficulty VARCHAR(20) DEFAULT '简单' COMMENT '难度：简单/中等/困难',
+    category VARCHAR(50) DEFAULT '家常菜' COMMENT '分类',
+    tags VARCHAR(2000) COMMENT '标签，逗号分隔',
+    match_percent INT COMMENT '匹配度百分比',
+    ingredients_json TEXT COMMENT '食材JSON数组',
+    steps_json TEXT COMMENT '步骤JSON数组',
+    is_hero TINYINT(1) DEFAULT 0 COMMENT '是否首页推荐 0否1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='食谱表';
+
+-- ============================================================
+-- 2. 用户表 users
+-- ============================================================
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
+    phone VARCHAR(20) UNIQUE NOT NULL COMMENT '手机号',
+    nickname VARCHAR(100) COMMENT '昵称',
+    password VARCHAR(100) COMMENT '密码',
+    avatar VARCHAR(500) COMMENT '头像URL',
+    taste_preferences VARCHAR(500) COMMENT '口味偏好，逗号分隔',
+    cooking_count INT DEFAULT 0 COMMENT '烹饪次数',
+    favorite_count INT DEFAULT 0 COMMENT '收藏数',
+    streak_days INT DEFAULT 0 COMMENT '连续烹饪天数',
+    dark_mode TINYINT(1) DEFAULT 0 COMMENT '深色模式 0关1开',
+    cooking_notify TINYINT(1) DEFAULT 1 COMMENT '烹饪提醒 0关1开',
+    status TINYINT(1) DEFAULT 1 COMMENT '状态 1正常 0禁用',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+-- ============================================================
+-- 3. 收藏表 favorites
+-- ============================================================
+DROP TABLE IF EXISTS favorites;
+CREATE TABLE favorites (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '收藏ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    recipe_id BIGINT NOT NULL COMMENT '食谱ID',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+    UNIQUE KEY uk_user_recipe (user_id, recipe_id),
+    KEY idx_user_id (user_id),
+    KEY idx_recipe_id (recipe_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收藏表';
+
+-- ============================================================
+-- 4. 通知表 notifications
+-- ============================================================
+DROP TABLE IF EXISTS notifications;
+CREATE TABLE notifications (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '通知ID',
+    user_id BIGINT COMMENT '用户ID，NULL表示全体通知',
+    type VARCHAR(50) DEFAULT 'system' COMMENT '通知类型：system/cooking',
+    title VARCHAR(200) NOT NULL COMMENT '通知标题',
+    content VARCHAR(500) COMMENT '通知内容',
+    icon VARCHAR(100) COMMENT '图标名称',
+    is_read TINYINT(1) DEFAULT 0 COMMENT '是否已读 0未读1已读',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    KEY idx_user_id (user_id),
+    KEY idx_is_read (is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
+
+-- ============================================================
+-- 5. 烹饪历史表 cooking_history
+-- ============================================================
+DROP TABLE IF EXISTS cooking_history;
+CREATE TABLE cooking_history (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    recipe_id BIGINT COMMENT '食谱ID',
+    recipe_title VARCHAR(200) COMMENT '食谱名称（冗余）',
+    recipe_image_url VARCHAR(500) COMMENT '食谱图片（冗余）',
+    cook_date VARCHAR(50) COMMENT '烹饪日期',
+    cook_time VARCHAR(50) COMMENT '烹饪时间点',
+    duration_min INT COMMENT '实际用时（分钟）',
+    score INT COMMENT '完成评分（0-100）',
+    rating INT COMMENT '用户评价星级（1-5）',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间',
+    KEY idx_user_id (user_id),
+    KEY idx_cook_date (cook_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='烹饪历史表';
+
+-- ============================================================
+-- 6. 管理员表 admin_users
+-- ============================================================
+DROP TABLE IF EXISTS admin_users;
+CREATE TABLE admin_users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '管理员ID',
+    username VARCHAR(50) UNIQUE NOT NULL COMMENT '用户名',
+    password VARCHAR(100) NOT NULL COMMENT '密码（BCrypt加密）',
+    nickname VARCHAR(100) COMMENT '昵称',
+    role VARCHAR(20) DEFAULT 'admin' COMMENT '角色：admin/super_admin',
+    status TINYINT(1) DEFAULT 1 COMMENT '状态 1正常 0禁用',
+    last_login_at DATETIME COMMENT '最后登录时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员表';
+
+-- ============================================================
+-- 7. AI识别日志表 scan_logs
+-- ============================================================
+DROP TABLE IF EXISTS scan_logs;
+CREATE TABLE scan_logs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    user_id BIGINT COMMENT '用户ID',
+    detected_ingredients VARCHAR(1000) COMMENT '识别到的食材JSON',
+    suggested_recipe_ids VARCHAR(500) COMMENT '推荐食谱ID列表',
+    scan_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '识别时间',
+    status VARCHAR(20) DEFAULT 'success' COMMENT '状态：success/fallback/error',
+    error_msg VARCHAR(500) COMMENT '错误信息',
+    KEY idx_user_id (user_id),
+    KEY idx_scan_time (scan_time),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI识别日志表';
+
+-- ============================================================
+-- 数据初始化
+-- ============================================================
+
+-- ============================================================
+-- 食谱数据（15条，覆盖所有分类）
+-- ============================================================
+INSERT INTO recipes (id, title, subtitle, image_url, rating, cook_time_min, calories, difficulty, category, tags, match_percent, ingredients_json, steps_json, is_hero) VALUES
+-- 1. 番茄炖牛腩（推荐）
+(1, '番茄炖牛腩', '酸甜浓郁，入口即化', '/images/1.jpg',
+ 4.8, 45, 380, '中等', '家常热菜', '推荐,下饭', 96,
+ '[{"name":"牛腩","amount":"500g","iconName":"beef"},{"name":"番茄","amount":"3个","iconName":"tomato"},{"name":"洋葱","amount":"1个","iconName":"onion"},{"name":"大蒜","amount":"5瓣","iconName":"garlic"},{"name":"生姜","amount":"3片","iconName":"leaf"},{"name":"料酒","amount":"2勺","iconName":"flask"},{"name":"盐","amount":"适量","iconName":"flask"},{"name":"冰糖","amount":"15g","iconName":"flask"}]',
+ '[{"title":"牛腩切块焯水，去除血沫杂质","tip":"大火煮沸后转小火"},{"title":"番茄划十字，开水烫后去皮切块","tip":""},{"title":"热油爆香葱姜蒜，加牛腩翻炒上色","tip":"中火翻炒3分钟"},{"title":"加番茄和热水，大火烧开转小火炖40分钟","tip":"大火转小火是关键"}]',
+ 1),
+-- 2. 青椒肉丝
+(2, '青椒肉丝', '鲜香嫩滑，下饭首选', '/images/2.jpg',
+ 4.7, 15, 280, '简单', '家常菜', '快手,高蛋白', 85,
+ '[{"name":"猪里脊","amount":"200g","iconName":"beef"},{"name":"青椒","amount":"3个","iconName":"leaf"},{"name":"蒜","amount":"2瓣","iconName":"garlic"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"猪肉切丝，加生抽、淀粉腌制10分钟","tip":""},{"title":"青椒去籽切丝，蒜切末备用","tip":""},{"title":"热锅凉油滑炒肉丝至变色盛出","tip":""},{"title":"爆香蒜末，下青椒翻炒，再倒入肉丝炒匀","tip":""},{"title":"调入盐、生抽，翻炒均匀出锅","tip":""}]',
+ 0),
+-- 3. 山药药膳鸡汤
+(3, '山药药膳鸡汤', '滋补暖身，慢火细炖', '/images/3.jpg',
+ 4.9, 90, 320, '中等', '汤煲', '养生,温补', 78,
+ '[{"name":"土鸡","amount":"半只","iconName":"beef"},{"name":"山药","amount":"200g","iconName":"leaf"},{"name":"枸杞","amount":"10g","iconName":"leaf"},{"name":"红枣","amount":"5颗","iconName":"leaf"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"鸡肉切块焯水洗净","tip":""},{"title":"砂锅中加足量清水，放入鸡肉和姜片","tip":""},{"title":"大火烧开后转小火炖煮60分钟","tip":""},{"title":"加入山药继续炖20分钟","tip":""},{"title":"出锅前加枸杞红枣，盐调味","tip":""}]',
+ 0),
+-- 4. 番茄炒蛋
+(4, '番茄炒蛋', '国民家常菜，酸甜开胃', '/images/4.jpg',
+ 4.7, 10, 210, '简单', '家常菜', '素食,快手', 88,
+ '[{"name":"番茄","amount":"2个","iconName":"tomato"},{"name":"鸡蛋","amount":"3个","iconName":"egg"},{"name":"葱","amount":"适量","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"},{"name":"糖","amount":"少许","iconName":"flask"}]',
+ '[{"title":"番茄切块，鸡蛋打散加少许盐","tip":""},{"title":"热锅热油倒入蛋液，炒熟盛出","tip":""},{"title":"锅中留底油炒番茄出汁","tip":""},{"title":"倒入鸡蛋翻炒均匀，撒葱花出锅","tip":""}]',
+ 0),
+-- 5. 蒜蓉西兰花
+(5, '蒜蓉西兰花', '清爽低脂，健康首选', '/images/5.jpg',
+ 4.6, 12, 120, '简单', '家常菜', '低脂,健康', 80,
+ '[{"name":"西兰花","amount":"300g","iconName":"leaf"},{"name":"大蒜","amount":"4瓣","iconName":"garlic"},{"name":"胡萝卜","amount":"半根","iconName":"leaf"},{"name":"蚝油","amount":"1勺","iconName":"flask"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"西兰花切小朵，盐水浸泡后焯水","tip":""},{"title":"大蒜切末，胡萝卜切片","tip":""},{"title":"热锅爆香蒜末，下胡萝卜片翻炒","tip":""},{"title":"倒入西兰花，加盐和蚝油调味炒匀","tip":""}]',
+ 0),
+-- 6. 红烧排骨
+(6, '红烧排骨', '酱香浓郁，骨肉分离', '/images/6.jpg',
+ 4.9, 60, 480, '中等', '家常热菜', '下饭,聚会', 70,
+ '[{"name":"猪肋排","amount":"500g","iconName":"beef"},{"name":"八角","amount":"2个","iconName":"flask"},{"name":"桂皮","amount":"1块","iconName":"flask"},{"name":"冰糖","amount":"20g","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"排骨剁块焯水洗净","tip":""},{"title":"炒糖色后倒入排骨翻炒","tip":""},{"title":"加入香料、生抽、老抽和开水","tip":""},{"title":"小火炖煮50分钟，大火收汁","tip":""}]',
+ 0),
+-- 7. 番茄蛋汤
+(7, '番茄蛋汤', '鲜美暖胃，十分钟上桌', '/images/7.jpg',
+ 4.7, 10, 95, '简单', '汤煲', '快手,清淡', 90,
+ '[{"name":"番茄","amount":"1个","iconName":"tomato"},{"name":"鸡蛋","amount":"1个","iconName":"egg"},{"name":"葱","amount":"适量","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"番茄切块，鸡蛋打散","tip":""},{"title":"锅中加水烧开，放入番茄煮软","tip":""},{"title":"缓缓倒入蛋液形成蛋花","tip":""},{"title":"加盐调味，撒葱花出锅","tip":""}]',
+ 0),
+-- 8. 麻婆豆腐
+(8, '麻婆豆腐', '麻辣鲜香，川菜经典', '/images/8.jpg',
+ 4.8, 20, 260, '中等', '川菜', '麻辣,下饭', 82,
+ '[{"name":"嫩豆腐","amount":"1块","iconName":"leaf"},{"name":"猪肉末","amount":"100g","iconName":"beef"},{"name":"豆瓣酱","amount":"2勺","iconName":"flask"},{"name":"花椒","amount":"适量","iconName":"flask"},{"name":"蒜苗","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"豆腐切方块，盐水焯烫去豆腥","tip":""},{"title":"热锅炒香肉末，加豆瓣酱炒出红油","tip":""},{"title":"加水和豆腐，小火炖5分钟","tip":""},{"title":"勾芡撒花椒粉和蒜苗出锅","tip":""}]',
+ 0),
+-- 9. 清蒸鲈鱼
+(9, '清蒸鲈鱼', '鲜美原味，营养丰富', '/images/9.jpg',
+ 4.9, 25, 180, '中等', '海鲜', '清淡,高蛋白', 75,
+ '[{"name":"鲈鱼","amount":"1条","iconName":"fish"},{"name":"葱","amount":"2根","iconName":"leaf"},{"name":"姜","amount":"1块","iconName":"leaf"},{"name":"蒸鱼豉油","amount":"2勺","iconName":"flask"},{"name":"料酒","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"鲈鱼洗净，两侧划刀，抹料酒和姜片","tip":""},{"title":"水开后大火蒸8-10分钟","tip":""},{"title":"倒掉盘中腥水，铺葱丝姜丝","tip":""},{"title":"热油浇淋葱丝，淋蒸鱼豉油即可","tip":""}]',
+ 0),
+-- 10. 蛋炒饭
+(10, '蛋炒饭', '简单快手，粒粒分明', '/images/10.jpg',
+ 4.5, 10, 350, '简单', '主食', '快手,饱腹', 92,
+ '[{"name":"隔夜米饭","amount":"1碗","iconName":"leaf"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"葱花","amount":"适量","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"},{"name":"生抽","amount":"少许","iconName":"flask"}]',
+ '[{"title":"鸡蛋打散，米饭提前抓散","tip":""},{"title":"热油炒散鸡蛋盛出","tip":""},{"title":"下米饭翻炒至粒粒分明","tip":""},{"title":"倒入鸡蛋，加盐和生抽炒匀，撒葱花出锅","tip":""}]',
+ 0),
+-- 11. 紫菜蛋花汤
+(11, '紫菜蛋花汤', '清淡鲜美，5分钟上桌', '/images/11.jpg',
+ 4.4, 5, 60, '简单', '汤煲', '快手,清淡', 88,
+ '[{"name":"紫菜","amount":"10g","iconName":"leaf"},{"name":"鸡蛋","amount":"1个","iconName":"egg"},{"name":"虾皮","amount":"少许","iconName":"fish"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"紫菜泡发洗净，鸡蛋打散","tip":""},{"title":"锅中加水烧开，下紫菜和虾皮","tip":""},{"title":"缓缓倒入蛋液形成蛋花","tip":""},{"title":"加盐调味，淋香油出锅","tip":""}]',
+ 0),
+-- 12. 可乐鸡翅
+(12, '可乐鸡翅', '甜香入味，孩子最爱', '/images/12.jpg',
+ 4.7, 30, 320, '简单', '家常菜', '甜口,下饭', 80,
+ '[{"name":"鸡翅","amount":"10只","iconName":"beef"},{"name":"可乐","amount":"1罐","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"鸡翅划刀焯水洗净","tip":""},{"title":"热锅煎至两面金黄","tip":""},{"title":"加生抽、可乐没过鸡翅","tip":""},{"title":"大火烧开转中火收汁即可","tip":""}]',
+ 0),
+-- 13. 宫保鸡丁
+(13, '宫保鸡丁', '酸甜微辣，川菜名菜', '/images/13.jpg',
+ 4.8, 20, 290, '中等', '川菜', '下饭,微辣', 76,
+ '[{"name":"鸡胸肉","amount":"300g","iconName":"beef"},{"name":"花生米","amount":"50g","iconName":"leaf"},{"name":"干辣椒","amount":"5个","iconName":"flask"},{"name":"黄瓜","amount":"半根","iconName":"leaf"}]',
+ '[{"title":"鸡肉切丁，加料酒、淀粉腌制","tip":""},{"title":"调汁：醋、糖、生抽、淀粉","tip":""},{"title":"热锅爆香干辣椒，下鸡丁翻炒","tip":""},{"title":"倒入调好的汁和花生米炒匀","tip":""}]',
+ 0),
+-- 14. 小炒牛肉
+(14, '小炒牛肉', '鲜嫩爽口，下饭神器', '/images/14.jpg',
+ 4.7, 15, 310, '中等', '家常热菜', '下饭,高蛋白', 78,
+ '[{"name":"牛肉","amount":"250g","iconName":"beef"},{"name":"青红椒","amount":"各1个","iconName":"leaf"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"黑胡椒","amount":"适量","iconName":"flask"}]',
+ '[{"title":"牛肉切片，加生抽、淀粉腌制","tip":""},{"title":"热锅快炒牛肉至变色盛出","tip":""},{"title":"爆香洋葱和青红椒","tip":""},{"title":"倒入牛肉，撒黑胡椒炒匀出锅","tip":""}]',
+ 0),
+-- 15. 凉拌黄瓜
+(15, '凉拌黄瓜', '清爽开胃，夏日首选', '/images/15.jpg',
+ 4.3, 5, 45, '简单', '凉菜', '素食,快手', 95,
+ '[{"name":"黄瓜","amount":"2根","iconName":"leaf"},{"name":"蒜","amount":"3瓣","iconName":"garlic"},{"name":"醋","amount":"2勺","iconName":"flask"},{"name":"辣椒油","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"黄瓜拍碎切段，撒盐腌制5分钟","tip":""},{"title":"蒜切末，调醋、生抽、辣椒油","tip":""},{"title":"倒掉黄瓜出的水，淋调料汁","tip":""},{"title":"拌匀即可上桌","tip":""}]',
+ 0);
+
+-- ============================================================
+-- 用户数据（10条，密码统一为 123456）
+-- ============================================================
+INSERT INTO users (id, phone, nickname, password, avatar, taste_preferences, cooking_count, favorite_count, streak_days, dark_mode, cooking_notify, status, created_at) VALUES
+(1, '13800138000', '美食探索家', '123456', NULL, '清淡,咸鲜,素食', 128, 56, 12, 0, 1, 1, '2026-06-01 10:00:00'),
+(2, '13900139000', '厨房新手', '123456', NULL, '麻辣,重口味', 32, 18, 5, 0, 1, 1, '2026-06-15 14:20:00'),
+(3, '13700137000', '养生达人', '123456', NULL, '清淡,养生,低脂', 256, 89, 30, 1, 1, 1, '2026-05-20 09:30:00'),
+(4, '13600136000', '烘焙爱好者', '123456', NULL, '甜食,烘焙', 67, 34, 8, 0, 0, 1, '2026-06-25 16:45:00'),
+(5, '13500135000', '健身教练', '123456', NULL, '高蛋白,低脂,健康', 189, 72, 20, 1, 1, 1, '2026-05-10 11:00:00'),
+(6, '13400134000', '美食博主', '123456', NULL, '各地菜系,创新', 342, 156, 45, 0, 1, 1, '2026-04-15 08:30:00'),
+(7, '13300133000', '上班族', '123456', NULL, '快手,简单', 56, 23, 7, 0, 1, 1, '2026-07-01 12:00:00'),
+(8, '13200132000', '全职妈妈', '123456', NULL, '家常菜,儿童餐', 423, 198, 60, 0, 1, 1, '2026-03-20 07:30:00'),
+(9, '13100131000', '留学生', '123456', NULL, '简单,快手', 89, 41, 15, 1, 0, 1, '2026-06-30 18:30:00'),
+(10, '13000130000', '退休阿姨', '123456', NULL, '养生,清淡,软烂', 512, 234, 90, 0, 1, 1, '2026-02-10 06:00:00');
+
+-- ============================================================
+-- 收藏数据（25条）
+-- ============================================================
+INSERT INTO favorites (id, user_id, recipe_id, created_at) VALUES
+-- 用户1收藏
+(1, 1, 1, '2026-07-10 10:30:00'),
+(2, 1, 2, '2026-07-11 14:20:00'),
+(3, 1, 4, '2026-07-12 09:15:00'),
+(4, 1, 7, '2026-07-13 16:45:00'),
+-- 用户2收藏
+(5, 2, 4, '2026-07-08 11:00:00'),
+(6, 2, 5, '2026-07-09 08:30:00'),
+(7, 2, 10, '2026-07-14 12:00:00'),
+-- 用户3收藏
+(8, 3, 3, '2026-07-07 08:00:00'),
+(9, 3, 7, '2026-07-08 18:30:00'),
+(10, 3, 11, '2026-07-10 10:15:00'),
+(11, 3, 15, '2026-07-12 14:20:00'),
+-- 用户4收藏
+(12, 4, 12, '2026-07-11 15:00:00'),
+(13, 4, 10, '2026-07-13 17:30:00'),
+-- 用户5收藏
+(14, 5, 2, '2026-07-09 12:00:00'),
+(15, 5, 5, '2026-07-10 19:30:00'),
+(16, 5, 14, '2026-07-12 18:00:00'),
+(17, 5, 9, '2026-07-15 11:30:00'),
+-- 用户6收藏
+(18, 6, 1, '2026-07-05 10:00:00'),
+(19, 6, 6, '2026-07-06 14:30:00'),
+(20, 6, 13, '2026-07-08 16:00:00'),
+(21, 6, 8, '2026-07-11 13:45:00'),
+-- 用户8收藏
+(22, 8, 4, '2026-07-03 09:00:00'),
+(23, 8, 12, '2026-07-05 11:30:00'),
+(24, 8, 7, '2026-07-09 17:00:00'),
+-- 用户10收藏
+(25, 10, 3, '2026-07-01 08:00:00'),
+(26, 10, 11, '2026-07-03 12:00:00'),
+(27, 10, 15, '2026-07-07 18:00:00');
+
+-- ============================================================
+-- 通知数据（20条）
+-- ============================================================
+INSERT INTO notifications (id, user_id, type, title, content, icon, is_read, created_at) VALUES
+-- 用户1的通知
+(1, 1, 'cooking', '炖牛腩火候提醒', '已炖煮40分钟，建议检查火候并翻动牛腩', 'flame', 0, '2026-07-17 11:00:00'),
+(2, 1, 'system', '新食谱推荐', '根据您最近烹饪记录，推荐3道新菜谱', 'sparkles', 0, '2026-07-17 09:30:00'),
+(3, 1, 'cooking', '烹饪完成记录', '您上次制作的番茄炒蛋已自动记录', 'chef_hat', 1, '2026-07-16 19:00:00'),
+(4, 1, 'system', '收藏食谱更新', '您收藏的"红烧排骨"新增了2个做法技巧', 'heart', 1, '2026-07-15 10:00:00'),
+(5, 1, 'system', '每周烹饪报告已生成', '点击查看您本周的烹饪数据和营养分析', 'sparkles', 1, '2026-07-14 08:00:00'),
+-- 用户2的通知
+(6, 2, 'system', '欢迎使用KitchenPal', '开始您的美食探索之旅吧', 'sparkles', 0, '2026-07-17 08:00:00'),
+(7, 2, 'cooking', '青椒肉丝火候提醒', '腌制时间已到，可以开始烹饪了', 'flame', 0, '2026-07-16 18:30:00'),
+-- 用户3的通知
+(8, 3, 'system', '养生食谱推荐', '根据您的口味偏好，推荐5道养生汤品', 'leaf', 0, '2026-07-17 07:30:00'),
+(9, 3, 'cooking', '鸡汤炖煮完成', '您的山药药膳鸡汤已炖煮90分钟，请出锅享用', 'chef_hat', 1, '2026-07-15 11:30:00'),
+-- 用户5的通知
+(10, 5, 'system', '健身餐推荐', '为您推荐3道高蛋白低脂健身餐', 'sparkles', 0, '2026-07-17 06:30:00'),
+(11, 5, 'cooking', '小炒牛肉完成', '您的小炒牛肉已完成，热量约310卡', 'chef_hat', 1, '2026-07-16 19:00:00'),
+-- 用户6的通知
+(12, 6, 'system', '美食博主认证', '恭喜您获得"美食博主"徽章', 'trophy', 0, '2026-07-17 10:00:00'),
+(13, 6, 'system', '粉丝增长提醒', '本周新增32位粉丝关注了您', 'heart', 0, '2026-07-16 20:00:00'),
+-- 用户8的通知
+(14, 8, 'cooking', '可乐鸡翅完成', '您的可乐鸡翅已完成，孩子一定会喜欢', 'chef_hat', 1, '2026-07-17 18:00:00'),
+(15, 8, 'system', '儿童餐推荐', '为您的孩子推荐5道营养均衡的儿童餐', 'sparkles', 0, '2026-07-16 09:00:00'),
+-- 用户10的通知
+(16, 10, 'system', '养生提醒', '建议每天喝一碗养生汤，有益健康', 'leaf', 0, '2026-07-17 07:00:00'),
+-- 全体通知
+(17, NULL, 'system', '夏日美食节活动', '参与活动赢取积分，限时福利等你来', 'trophy', 0, '2026-07-16 00:00:00'),
+(18, NULL, 'system', '系统更新通知', 'v2.5版本已发布，新增AI火候预测功能', 'bell', 0, '2026-07-10 14:00:00'),
+(19, NULL, 'system', '社区规范更新', '请遵守最新社区规范，共建美食交流环境', 'info', 1, '2026-07-08 10:00:00'),
+(20, NULL, 'system', '端午节活动', '端午节美食制作大赛开始报名啦', 'trophy', 1, '2026-07-05 09:00:00');
+
+-- ============================================================
+-- 烹饪历史数据（25条，覆盖多天多用户）
+-- ============================================================
+INSERT INTO cooking_history (id, user_id, recipe_id, recipe_title, recipe_image_url, cook_date, cook_time, duration_min, score, rating, created_at) VALUES
+-- 用户1的历史
+(1, 1, 1, '番茄炖牛腩', '/images/1.jpg', '今天', '12:30', 45, 96, 5, '2026-07-17 12:30:00'),
+(2, 1, 5, '蒜蓉西兰花', '/images/5.jpg', '今天', '18:45', 12, 92, 4, '2026-07-17 18:45:00'),
+(3, 1, 4, '番茄炒蛋', '/images/4.jpg', '昨天', '19:00', 10, 88, 4, '2026-07-16 19:00:00'),
+(4, 1, 7, '番茄蛋汤', '/images/7.jpg', '昨天', '12:15', 8, 90, 5, '2026-07-16 12:15:00'),
+(5, 1, 10, '蛋炒饭', '/images/10.jpg', '前天', '12:00', 8, 85, 4, '2026-07-15 12:00:00'),
+-- 用户2的历史
+(6, 2, 4, '番茄炒蛋', '/images/4.jpg', '今天', '18:30', 15, 85, 4, '2026-07-17 18:30:00'),
+(7, 2, 2, '青椒肉丝', '/images/2.jpg', '昨天', '19:00', 18, 82, 4, '2026-07-16 19:00:00'),
+-- 用户3的历史
+(8, 3, 3, '山药药膳鸡汤', '/images/3.jpg', '前天', '11:00', 95, 98, 5, '2026-07-15 11:00:00'),
+(9, 3, 11, '紫菜蛋花汤', '/images/11.jpg', '今天', '17:30', 6, 94, 5, '2026-07-17 17:30:00'),
+(10, 3, 15, '凉拌黄瓜', '/images/15.jpg', '昨天', '18:00', 5, 90, 4, '2026-07-16 18:00:00'),
+-- 用户5的历史
+(11, 5, 2, '青椒肉丝', '/images/2.jpg', '今天', '13:00', 18, 94, 5, '2026-07-17 13:00:00'),
+(12, 5, 5, '蒜蓉西兰花', '/images/5.jpg', '昨天', '19:30', 10, 91, 4, '2026-07-16 19:30:00'),
+(13, 5, 14, '小炒牛肉', '/images/14.jpg', '前天', '18:00', 16, 93, 5, '2026-07-15 18:00:00'),
+-- 用户6的历史
+(14, 6, 6, '红烧排骨', '/images/6.jpg', '今天', '12:00', 65, 97, 5, '2026-07-17 12:00:00'),
+(15, 6, 13, '宫保鸡丁', '/images/13.jpg', '昨天', '18:30', 22, 92, 4, '2026-07-16 18:30:00'),
+-- 用户8的历史
+(16, 8, 4, '番茄炒蛋', '/images/4.jpg', '今天', '17:30', 12, 88, 5, '2026-07-17 17:30:00'),
+(17, 8, 12, '可乐鸡翅', '/images/12.jpg', '昨天', '18:00', 30, 95, 5, '2026-07-16 18:00:00'),
+(18, 8, 10, '蛋炒饭', '/images/10.jpg', '前天', '12:00', 10, 86, 4, '2026-07-15 12:00:00'),
+-- 用户10的历史
+(19, 10, 3, '山药药膳鸡汤', '/images/3.jpg', '今天', '11:00', 90, 99, 5, '2026-07-17 11:00:00'),
+(20, 10, 7, '番茄蛋汤', '/images/7.jpg', '昨天', '11:30', 10, 92, 5, '2026-07-16 11:30:00'),
+(21, 10, 11, '紫菜蛋花汤', '/images/11.jpg', '前天', '17:00', 6, 95, 5, '2026-07-15 17:00:00'),
+-- 用户7的历史
+(22, 7, 4, '番茄炒蛋', '/images/4.jpg', '今天', '19:00', 12, 80, 4, '2026-07-17 19:00:00'),
+(23, 7, 10, '蛋炒饭', '/images/10.jpg', '昨天', '12:30', 10, 78, 3, '2026-07-16 12:30:00'),
+-- 用户9的历史
+(24, 9, 2, '青椒肉丝', '/images/2.jpg', '今天', '20:00', 20, 75, 3, '2026-07-17 20:00:00'),
+(25, 9, 7, '番茄蛋汤', '/images/7.jpg', '前天', '19:30', 12, 80, 4, '2026-07-15 19:30:00');
+
+-- ============================================================
+-- 管理员数据（2条，密码 admin123 的 BCrypt 加密）
+-- ============================================================
+INSERT INTO admin_users (id, username, password, nickname, role, status, last_login_at, created_at) VALUES
+(1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '超级管理员', 'super_admin', 1, '2026-07-17 09:00:00', '2026-07-01 00:00:00'),
+(2, 'editor', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '内容编辑', 'admin', 1, '2026-07-16 15:00:00', '2026-07-05 00:00:00');
+
+-- ============================================================
+-- AI识别日志数据（15条）
+-- ============================================================
+INSERT INTO scan_logs (id, user_id, detected_ingredients, suggested_recipe_ids, scan_time, status, error_msg) VALUES
+-- 成功识别
+(1, 1, '[{"name":"番茄","confidence":98,"weight":"约200g"},{"name":"洋葱","confidence":95,"weight":"约150g"},{"name":"大蒜","confidence":91,"weight":"约30g"}]', '1,4,7', '2026-07-17 10:30:00', 'success', NULL),
+(2, 1, '[{"name":"西兰花","confidence":96,"weight":"约300g"},{"name":"胡萝卜","confidence":88,"weight":"约100g"}]', '5', '2026-07-17 15:20:00', 'success', NULL),
+(3, 2, '[{"name":"鸡蛋","confidence":99,"weight":"约3个"},{"name":"番茄","confidence":97,"weight":"约200g"}]', '4,7', '2026-07-17 17:45:00', 'success', NULL),
+(4, 3, '[{"name":"鸡肉","confidence":92,"weight":"约500g"},{"name":"山药","confidence":85,"weight":"约200g"}]', '3', '2026-07-16 09:00:00', 'success', NULL),
+(5, 5, '[{"name":"猪肉","confidence":94,"weight":"约200g"},{"name":"青椒","confidence":90,"weight":"约150g"}]', '2,6', '2026-07-17 12:00:00', 'success', NULL),
+(6, 6, '[{"name":"排骨","confidence":96,"weight":"约500g"},{"name":"冰糖","confidence":82,"weight":"约20g"}]', '6', '2026-07-17 11:00:00', 'success', NULL),
+(7, 8, '[{"name":"鸡翅","confidence":97,"weight":"约10只"},{"name":"可乐","confidence":89,"weight":"1罐"}]', '12', '2026-07-16 17:30:00', 'success', NULL),
+(8, 10, '[{"name":"豆腐","confidence":93,"weight":"约1块"},{"name":"猪肉末","confidence":90,"weight":"约100g"}]', '8', '2026-07-15 10:00:00', 'success', NULL),
+(9, 3, '[{"name":"鲈鱼","confidence":95,"weight":"约1条"},{"name":"葱","confidence":92,"weight":"约2根"}]', '9', '2026-07-14 16:30:00', 'success', NULL),
+(10, 5, '[{"name":"牛肉","confidence":94,"weight":"约250g"},{"name":"洋葱","confidence":88,"weight":"约半个"}]', '14', '2026-07-13 18:00:00', 'success', NULL),
+-- 降级处理
+(11, 1, NULL, NULL, '2026-07-15 14:30:00', 'fallback', '图片模糊，使用本地数据'),
+(12, 2, NULL, NULL, '2026-07-14 20:00:00', 'fallback', '光线不足，使用本地数据'),
+-- 识别失败
+(13, 1, NULL, NULL, '2026-07-15 14:30:00', 'error', 'AI服务超时'),
+(14, 2, NULL, NULL, '2026-07-16 20:00:00', 'error', '图片格式不支持'),
+(15, 9, NULL, NULL, '2026-07-13 19:00:00', 'error', '网络连接失败');
+
+-- ============================================================
+-- 重置自增ID（避免后续插入冲突）
+-- ============================================================
+ALTER TABLE recipes AUTO_INCREMENT = 111;
+ALTER TABLE users AUTO_INCREMENT = 11;
+ALTER TABLE favorites AUTO_INCREMENT = 28;
+ALTER TABLE notifications AUTO_INCREMENT = 21;
+ALTER TABLE cooking_history AUTO_INCREMENT = 26;
+ALTER TABLE admin_users AUTO_INCREMENT = 3;
+ALTER TABLE scan_logs AUTO_INCREMENT = 16;
+
+-- ============================================================
+-- 完成
+-- ============================================================
+SELECT '数据库初始化完成！' AS message;
+SELECT '共 7 张表' AS message;
+SELECT '食谱：15 条' AS message;
+SELECT '用户：10 条' AS message;
+SELECT '收藏：27 条' AS message;
+SELECT '通知：20 条' AS message;
+SELECT '烹饪历史：25 条' AS message;
+SELECT '管理员：2 条' AS message;
+SELECT 'AI识别日志：15 条' AS message;
+SELECT '测试账号：用户 13800138000 / 123456' AS message;
+SELECT '管理员账号：admin / admin123' AS message;
+
+-- ============================================================
+-- 菜谱扩充（21 道新菜，ids 16-36），图片由后端 static/images 托管
+-- ============================================================
+INSERT INTO recipes (id, title, subtitle, image_url, rating, cook_time_min, calories, difficulty, category, tags, match_percent, ingredients_json, steps_json, is_hero) VALUES
+(16, '水煮牛肉', '麻辣鲜香，川味十足', '/images/16.jpg',
+ 4.8, 30, 340, '中等', '川菜', '麻辣,下饭', 84,
+ '[{"name":"牛里脊","amount":"300g","iconName":"beef"},{"name":"豆芽","amount":"200g","iconName":"leaf"},{"name":"豆瓣酱","amount":"2勺","iconName":"flask"},{"name":"干辣椒","amount":"8个","iconName":"flask"},{"name":"花椒","amount":"1勺","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"牛肉逆纹切薄片，加料酒、淀粉、蛋清抓匀腌制15分钟","tip":""},{"title":"豆芽焯水垫底，铺入大碗","tip":""},{"title":"热油炒香豆瓣酱和蒜末，加高汤烧开","tip":""},{"title":"下牛肉片煮至变色，连汤倒入碗中","tip":""},{"title":"撒干辣椒花椒，泼热油激香","tip":"泼油时注意安全"}]',
+ 1),
+(17, '鱼香肉丝', '酸甜微辣，经典川味', '/images/17.jpg',
+ 4.7, 20, 290, '中等', '川菜', '下饭,微辣', 80,
+ '[{"name":"猪里脊","amount":"250g","iconName":"beef"},{"name":"木耳","amount":"50g","iconName":"leaf"},{"name":"胡萝卜","amount":"半根","iconName":"leaf"},{"name":"泡椒","amount":"3个","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"里脊切丝，加生抽、淀粉腌制10分钟","tip":""},{"title":"木耳泡发切丝，胡萝卜切丝备用","tip":""},{"title":"调鱼香汁：醋、糖、生抽、淀粉、清水","tip":""},{"title":"热油滑炒肉丝至变色盛出","tip":""},{"title":"爆香泡椒蒜末，下配菜和肉丝，倒入鱼香汁炒匀","tip":""}]',
+ 0),
+(18, '回锅肉', '肥而不腻，越嚼越香', '/images/18.jpg',
+ 4.8, 25, 420, '中等', '川菜', '下饭,香辣', 78,
+ '[{"name":"五花肉","amount":"400g","iconName":"beef"},{"name":"蒜苗","amount":"3根","iconName":"leaf"},{"name":"青椒","amount":"2个","iconName":"leaf"},{"name":"豆瓣酱","amount":"2勺","iconName":"flask"},{"name":"甜面酱","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"五花肉冷水下锅煮至八成熟，晾凉切薄片","tip":""},{"title":"蒜苗切段，青椒切块","tip":""},{"title":"热锅少油，下肉片煸至卷曲出油","tip":""},{"title":"加豆瓣酱、甜面酱炒出红油","tip":""},{"title":"下蒜苗青椒大火翻炒出锅","tip":""}]',
+ 0),
+(19, '酸菜鱼', '酸辣开胃，鱼片嫩滑', '/images/19.jpg',
+ 4.9, 35, 260, '中等', '川菜', '酸辣,高蛋白', 76,
+ '[{"name":"黑鱼片","amount":"400g","iconName":"fish"},{"name":"酸菜","amount":"200g","iconName":"leaf"},{"name":"泡椒","amount":"5个","iconName":"flask"},{"name":"姜蒜","amount":"适量","iconName":"garlic"},{"name":"蛋清","amount":"1个","iconName":"egg"}]',
+ '[{"title":"鱼片加盐、蛋清、淀粉抓匀腌制","tip":""},{"title":"酸菜切段，热油炒香姜蒜泡椒","tip":""},{"title":"下酸菜翻炒，加水烧开","tip":""},{"title":"放入鱼骨煮5分钟，再下鱼片煮至变白","tip":""},{"title":"撒葱花，淋热油激香","tip":""}]',
+ 1),
+(20, '糖醋里脊', '外酥里嫩，酸甜可口', '/images/20.jpg',
+ 4.8, 25, 380, '简单', '家常热菜', '酸甜,孩子爱', 82,
+ '[{"name":"猪里脊","amount":"300g","iconName":"beef"},{"name":"鸡蛋","amount":"1个","iconName":"egg"},{"name":"番茄酱","amount":"3勺","iconName":"flask"},{"name":"白糖","amount":"2勺","iconName":"flask"},{"name":"白醋","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"里脊切条，加盐、蛋液、淀粉裹匀","tip":""},{"title":"油温六成热炸至金黄捞出","tip":""},{"title":"复炸一次更酥脆","tip":""},{"title":"锅中加番茄酱、糖、醋熬成糖醋汁","tip":""},{"title":"倒入里脊快速翻裹均匀","tip":""}]',
+ 1),
+(21, '红烧肉', '色泽红亮，入口即化', '/images/21.jpg',
+ 4.9, 70, 520, '中等', '家常热菜', '下饭,聚会', 74,
+ '[{"name":"五花肉","amount":"500g","iconName":"beef"},{"name":"冰糖","amount":"25g","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"老抽","amount":"1勺","iconName":"flask"},{"name":"八角桂皮","amount":"适量","iconName":"flask"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"五花肉切方块，冷水焯水去腥","tip":""},{"title":"小火炒糖色至枣红色","tip":""},{"title":"下肉块翻炒上色","tip":""},{"title":"加生抽老抽、香料和开水没过肉","tip":""},{"title":"小火炖50分钟，大火收汁","tip":""}]',
+ 1),
+(22, '京酱肉丝', '酱香浓郁，京味十足', '/images/22.jpg',
+ 4.6, 20, 300, '中等', '家常热菜', '下饭,经典', 72,
+ '[{"name":"猪里脊","amount":"300g","iconName":"beef"},{"name":"甜面酱","amount":"3勺","iconName":"flask"},{"name":"豆腐皮","amount":"2张","iconName":"leaf"},{"name":"大葱","amount":"1根","iconName":"leaf"},{"name":"蛋清","amount":"1个","iconName":"egg"}]',
+ '[{"title":"里脊切丝，加蛋清淀粉腌制","tip":""},{"title":"热油滑散肉丝至变色盛出","tip":""},{"title":"锅中炒香甜面酱","tip":""},{"title":"倒入肉丝裹匀酱汁","tip":""},{"title":"配葱丝和豆腐皮卷食","tip":""}]',
+ 0),
+(23, '地三鲜', '咸鲜软糯，东北名菜', '/images/23.jpg',
+ 4.5, 20, 240, '简单', '家常菜', '素食,下饭', 70,
+ '[{"name":"茄子","amount":"2根","iconName":"leaf"},{"name":"土豆","amount":"2个","iconName":"leaf"},{"name":"青椒","amount":"2个","iconName":"leaf"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"茄子土豆切滚刀块，青椒切块","tip":""},{"title":"土豆炸至金黄，茄子炸软捞出","tip":""},{"title":"爆香蒜末","tip":""},{"title":"倒入茄子和土豆，加生抽蚝油","tip":""},{"title":"下青椒翻炒收汁","tip":""}]',
+ 0),
+(24, '干煸四季豆', '干香入味，下饭一绝', '/images/24.jpg',
+ 4.5, 15, 180, '简单', '家常菜', '下饭,素食', 68,
+ '[{"name":"四季豆","amount":"400g","iconName":"leaf"},{"name":"猪肉末","amount":"100g","iconName":"beef"},{"name":"干辣椒","amount":"5个","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"},{"name":"芽菜","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"四季豆去筋掰段，控干水分","tip":""},{"title":"热油煸炒四季豆至表皮起皱盛出","tip":""},{"title":"炒香肉末和芽菜","tip":""},{"title":"加干辣椒蒜末炒香","tip":""},{"title":"倒入四季豆翻炒调味","tip":""}]',
+ 0),
+(25, '冬瓜排骨汤', '清淡解腻，消暑佳品', '/images/25.jpg',
+ 4.4, 60, 150, '简单', '汤煲', '清淡,养生', 88,
+ '[{"name":"排骨","amount":"400g","iconName":"beef"},{"name":"冬瓜","amount":"400g","iconName":"leaf"},{"name":"姜片","amount":"3片","iconName":"leaf"},{"name":"枸杞","amount":"10g","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"排骨冷水焯水洗净","tip":""},{"title":"砂锅加水放排骨和姜片烧开","tip":""},{"title":"小火炖40分钟","tip":""},{"title":"加冬瓜块继续炖15分钟","tip":""},{"title":"加枸杞和盐调味","tip":""}]',
+ 0),
+(26, '玉米排骨汤', '清甜浓郁，营养滋补', '/images/26.jpg',
+ 4.6, 60, 190, '简单', '汤煲', '清淡,养生', 90,
+ '[{"name":"排骨","amount":"400g","iconName":"beef"},{"name":"玉米","amount":"2根","iconName":"leaf"},{"name":"胡萝卜","amount":"1根","iconName":"leaf"},{"name":"姜片","amount":"3片","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"排骨焯水洗净","tip":""},{"title":"玉米切段，胡萝卜切块","tip":""},{"title":"所有材料入锅加足量水","tip":""},{"title":"大火烧开转小火炖50分钟","tip":""},{"title":"加盐调味即可","tip":""}]',
+ 0),
+(27, '银耳莲子羹', '胶质浓稠，滋润养颜', '/images/27.jpg',
+ 4.5, 45, 120, '简单', '汤煲', '甜品,养生', 86,
+ '[{"name":"银耳","amount":"1朵","iconName":"leaf"},{"name":"莲子","amount":"30g","iconName":"leaf"},{"name":"红枣","amount":"8颗","iconName":"leaf"},{"name":"枸杞","amount":"10g","iconName":"leaf"},{"name":"冰糖","amount":"30g","iconName":"flask"}]',
+ '[{"title":"银耳泡发撕小朵，莲子泡软","tip":""},{"title":"银耳莲子加水大火烧开","tip":""},{"title":"转小火炖30分钟至出胶","tip":""},{"title":"加红枣冰糖继续炖10分钟","tip":""},{"title":"出锅前撒枸杞","tip":""}]',
+ 0),
+(28, '番茄牛腩面', '汤浓面劲，一碗满足', '/images/28.jpg',
+ 4.7, 60, 450, '中等', '主食', '饱腹,酸甜', 84,
+ '[{"name":"牛腩","amount":"300g","iconName":"beef"},{"name":"番茄","amount":"3个","iconName":"tomato"},{"name":"面条","amount":"200g","iconName":"leaf"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"牛腩切块焯水","tip":""},{"title":"番茄去皮切块，洋葱切丁","tip":""},{"title":"炒香洋葱，加牛腩和番茄翻炒","tip":""},{"title":"加水炖40分钟成汤底","tip":""},{"title":"面条煮熟捞入碗中，浇上牛腩汤","tip":""}]',
+ 0),
+(29, '阳春面', '葱香清鲜，简单温暖', '/images/29.jpg',
+ 4.3, 10, 320, '简单', '主食', '快手,清淡', 92,
+ '[{"name":"细面条","amount":"150g","iconName":"leaf"},{"name":"小葱","amount":"3根","iconName":"leaf"},{"name":"猪油","amount":"1勺","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"高汤","amount":"适量","iconName":"flask"}]',
+ '[{"title":"小葱切段，用油熬成葱油","tip":""},{"title":"碗中放生抽、猪油、葱油调底","tip":""},{"title":"面条煮熟","tip":""},{"title":"冲入热高汤","tip":""},{"title":"捞入面条，撒葱花","tip":""}]',
+ 0),
+(30, '三鲜水饺', '皮薄馅大，鲜香多汁', '/images/30.jpg',
+ 4.8, 40, 380, '中等', '主食', '饱腹,鲜香', 80,
+ '[{"name":"饺子皮","amount":"30张","iconName":"leaf"},{"name":"猪肉末","amount":"200g","iconName":"beef"},{"name":"虾仁","amount":"100g","iconName":"fish"},{"name":"韭菜","amount":"150g","iconName":"leaf"},{"name":"姜末","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"猪肉末加姜末、生抽搅打上劲","tip":""},{"title":"虾仁切丁，韭菜切碎，拌入肉馅","tip":""},{"title":"取饺子皮包入馅料捏紧","tip":""},{"title":"水开下饺子，点三次凉水","tip":""},{"title":"饺子浮起捞出，配醋碟","tip":""}]',
+ 0),
+(31, '韭菜盒子', '外皮酥脆，韭香扑鼻', '/images/31.jpg',
+ 4.6, 30, 300, '简单', '主食', '早餐,家常', 78,
+ '[{"name":"面粉","amount":"300g","iconName":"leaf"},{"name":"韭菜","amount":"200g","iconName":"leaf"},{"name":"鸡蛋","amount":"3个","iconName":"egg"},{"name":"虾皮","amount":"20g","iconName":"fish"},{"name":"香油","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"面粉加温水揉成面团醒20分钟","tip":""},{"title":"鸡蛋炒碎，韭菜切碎，加虾皮香油拌馅","tip":""},{"title":"面团擀成圆皮，包入馅料对折捏边","tip":""},{"title":"平底锅少油，煎至两面金黄","tip":""},{"title":"出锅切块食用","tip":""}]',
+ 0),
+(32, '皮蛋瘦肉粥', '绵滑咸香，广式经典', '/images/32.jpg',
+ 4.7, 45, 220, '简单', '主食', '早餐,养胃', 88,
+ '[{"name":"大米","amount":"100g","iconName":"leaf"},{"name":"皮蛋","amount":"2个","iconName":"egg"},{"name":"猪瘦肉","amount":"100g","iconName":"beef"},{"name":"姜丝","amount":"适量","iconName":"leaf"},{"name":"葱花","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"大米洗净加水煮成粥底","tip":""},{"title":"瘦肉切丝，加盐淀粉腌制","tip":""},{"title":"皮蛋切丁","tip":""},{"title":"粥底浓稠后下肉丝和皮蛋","tip":""},{"title":"煮5分钟调味，撒姜丝葱花","tip":""}]',
+ 0),
+(33, '小米南瓜粥', '金黄软糯，暖胃养生', '/images/33.jpg',
+ 4.5, 30, 160, '简单', '主食', '早餐,养生', 90,
+ '[{"name":"小米","amount":"80g","iconName":"leaf"},{"name":"南瓜","amount":"200g","iconName":"leaf"},{"name":"冰糖","amount":"适量","iconName":"flask"}]',
+ '[{"title":"小米淘洗干净","tip":""},{"title":"南瓜去皮切小块","tip":""},{"title":"小米南瓜加水大火烧开","tip":""},{"title":"转小火煮25分钟至软糯","tip":""},{"title":"加冰糖调味","tip":""}]',
+ 0),
+(34, '香煎三文鱼', '外焦里嫩，低脂高蛋白', '/images/34.jpg',
+ 4.8, 15, 280, '简单', '海鲜', '低脂,高蛋白', 74,
+ '[{"name":"三文鱼","amount":"200g","iconName":"fish"},{"name":"黑胡椒","amount":"适量","iconName":"flask"},{"name":"柠檬","amount":"半个","iconName":"leaf"},{"name":"芦笋","amount":"100g","iconName":"leaf"},{"name":"黄油","amount":"10g","iconName":"flask"}]',
+ '[{"title":"三文鱼擦干，两面抹盐和黑胡椒","tip":""},{"title":"热锅下油，鱼皮朝下煎3分钟","tip":""},{"title":"翻面煎2分钟至金黄","tip":""},{"title":"加黄油和柠檬汁淋面","tip":""},{"title":"配煎芦笋装盘","tip":""}]',
+ 0),
+(35, '油焖大虾', '色泽红亮，鲜甜弹牙', '/images/35.jpg',
+ 4.8, 20, 240, '中等', '海鲜', '宴客,鲜甜', 76,
+ '[{"name":"大虾","amount":"500g","iconName":"fish"},{"name":"番茄酱","amount":"2勺","iconName":"flask"},{"name":"姜蒜","amount":"适量","iconName":"garlic"},{"name":"白糖","amount":"1勺","iconName":"flask"},{"name":"料酒","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"大虾剪须开背去虾线","tip":""},{"title":"热油下虾煎至两面变红","tip":""},{"title":"加姜蒜炒香","tip":""},{"title":"加番茄酱、糖、料酒和水焖5分钟","tip":""},{"title":"大火收汁，撒葱花","tip":""}]',
+ 1),
+(36, '蒜香烤鸡翅', '蒜香浓郁，烤制焦香', '/images/36.jpg',
+ 4.6, 40, 350, '简单', '家常热菜', '烤箱,孩子爱', 72,
+ '[{"name":"鸡翅","amount":"10只","iconName":"beef"},{"name":"蒜末","amount":"5瓣","iconName":"garlic"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"蜂蜜","amount":"1勺","iconName":"flask"},{"name":"黑胡椒","amount":"适量","iconName":"flask"}]',
+ '[{"title":"鸡翅划刀，加蒜末、生抽、蜂蜜腌制30分钟","tip":""},{"title":"烤盘铺锡纸，摆入鸡翅","tip":""},{"title":"烤箱200度预热","tip":""},{"title":"烤20分钟，翻面再烤10分钟","tip":""},{"title":"撒黑胡椒出炉","tip":""}]',
+ 0);
+
+-- ============================================================
+-- 菜谱二次扩充（74 道新菜，ids 37-110），图片由后端 static/images 托管
+-- ============================================================
+INSERT INTO recipes (id, title, subtitle, image_url, rating, cook_time_min, calories, difficulty, category, tags, match_percent, ingredients_json, steps_json, is_hero) VALUES
+(37, '口水鸡', '麻辣鲜香，川味凉菜', '/images/37.jpg',
+ 4.7, 30, 320, '中等', '凉菜', '麻辣,开胃', 78,
+ '[{"name":"三黄鸡","amount":"半只","iconName":"beef"},{"name":"花生碎","amount":"30g","iconName":"leaf"},{"name":"辣椒油","amount":"3勺","iconName":"flask"},{"name":"花椒粉","amount":"1勺","iconName":"flask"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"煮鸡","description":"整鸡冷水下锅，加姜片葱段和料酒，中火煮15分钟后关火焖10分钟","heat":"中火","durationSeconds":1500,"tip":"筷子插鸡腿最厚处无血水即熟，焖比久煮更嫩"},{"title":"冰镇定型","description":"捞出整鸡立刻放入冰水中浸10分钟至完全冷却","heat":"无需火候","durationSeconds":600,"tip":"冰水激过鸡皮才爽滑弹牙"},{"title":"斩件码盘","description":"沥干水分剁成均匀长条，鸡皮朝上码入盘中","heat":"无需火候","durationSeconds":180,"tip":"刀要快、下刀利落，鸡肉才不散"},{"title":"调红油汁","description":"辣椒油、蒜末、花椒粉、生抽、香醋、白糖加少许鸡汤调匀","heat":"无需火候","durationSeconds":120,"tip":"汁略咸一点，浇上才够味"},{"title":"浇汁撒料","description":"红油汁淋满鸡块，撒花生碎和小葱花即成","heat":"无需火候","durationSeconds":60,"tip":"现浇现吃，久放鸡皮会出水"}]',
+ 0),
+(38, '夫妻肺片', '麻辣爽口，川味经典', '/images/38.jpg',
+ 4.7, 40, 290, '中等', '凉菜', '麻辣,经典', 76,
+ '[{"name":"牛腱肉","amount":"300g","iconName":"beef"},{"name":"牛肚","amount":"150g","iconName":"beef"},{"name":"花生碎","amount":"30g","iconName":"leaf"},{"name":"辣椒油","amount":"4勺","iconName":"flask"},{"name":"花椒粉","amount":"1勺","iconName":"flask"},{"name":"香菜","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"卤牛肉","description":"牛腱肉冷水下锅焯水，加卤料小火卤40分钟后捞出晾凉","heat":"小火","durationSeconds":2400,"tip":"卤完浸泡半小时更入味，晾凉再切才成形"},{"title":"卤牛肚","description":"牛肚洗净焯水，同卤水煮30分钟至软糯","heat":"小火","durationSeconds":1800,"tip":"牛肚要煮到筷子能扎透"},{"title":"切片","description":"牛肉与牛肚均切成薄而匀的片状","heat":"无需火候","durationSeconds":300,"tip":"越薄越易挂汁，逆纹切口感更嫩"},{"title":"调红油","description":"辣椒油、花椒粉、生抽、香醋、白糖、蒜末调成味汁","heat":"无需火候","durationSeconds":120,"tip":"麻辣味要压住甜味，糖只提鲜"},{"title":"拌制","description":"肉片淋味汁拌匀，撒花生碎和香菜","heat":"无需火候","durationSeconds":60,"tip":"拌好后稍静置2分钟更入味"}]',
+ 0),
+(39, '蒜泥白肉', '蒜香浓郁，肥而不腻', '/images/39.jpg',
+ 4.6, 35, 360, '简单', '凉菜', '蒜香,下饭', 74,
+ '[{"name":"五花肉","amount":"400g","iconName":"beef"},{"name":"蒜末","amount":"6瓣","iconName":"garlic"},{"name":"辣椒油","amount":"2勺","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"煮肉","description":"五花肉整块冷水下锅，加姜葱料酒中火煮25分钟","heat":"中火","durationSeconds":1500,"tip":"肉块别切小，整块煮才不柴"},{"title":"晾凉","description":"捞出沥干，放凉后入冰箱冷藏20分钟","heat":"无需火候","durationSeconds":1200,"tip":"冷透再切，片薄而不碎"},{"title":"切薄片","description":"取出去皮，横刀片成极薄的肉片","heat":"无需火候","durationSeconds":300,"tip":"刀身放平慢慢推，片越薄越好吃"},{"title":"调蒜泥汁","description":"蒜末加生抽、辣椒油、白糖和少许肉汤调匀","heat":"无需火候","durationSeconds":120,"tip":"蒜末要现捣，静置一会蒜香更冲"},{"title":"浇汁","description":"肉片码盘浇上蒜泥汁，撒葱花","heat":"无需火候","durationSeconds":60,"tip":"食用前再浇汁，避免肉片出水"}]',
+ 0),
+(40, '凉拌木耳', '爽脆开胃，低脂健康', '/images/40.jpg',
+ 4.5, 15, 110, '简单', '凉菜', '素食,爽口', 86,
+ '[{"name":"干木耳","amount":"30g","iconName":"leaf"},{"name":"小米椒","amount":"3个","iconName":"flask"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"香菜","amount":"适量","iconName":"leaf"},{"name":"香醋","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"泡发","description":"干木耳用温水泡发30分钟，摘去根部撕成小朵","heat":"无需火候","durationSeconds":1800,"tip":"温水泡发比热水更脆；泡发别超过2小时"},{"title":"焯水","description":"水烧开下木耳焯2分钟，捞出立刻过凉水","heat":"大火","durationSeconds":150,"tip":"焯水能去杂质，过凉保住脆感"},{"title":"切配料","description":"小米椒切圈，蒜切末，香菜切段","heat":"无需火候","durationSeconds":120,"tip":"辣椒籽可去可留，看嗜辣程度"},{"title":"调汁","description":"蒜末、小米椒、香醋、生抽、香油、白糖调成料汁","heat":"无需火候","durationSeconds":120,"tip":"糖少许能中和酸味，口感更柔和"},{"title":"拌匀","description":"木耳淋料汁拌匀，撒香菜即成","heat":"无需火候","durationSeconds":60,"tip":"拌好后冷藏10分钟更爽脆"}]',
+ 0),
+(41, '皮蛋豆腐', '清凉嫩滑，三分钟上桌', '/images/41.jpg',
+ 4.4, 5, 150, '简单', '凉菜', '快手,清淡', 88,
+ '[{"name":"内酯豆腐","amount":"1盒","iconName":"leaf"},{"name":"皮蛋","amount":"2个","iconName":"egg"},{"name":"小葱","amount":"2根","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"香油","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"取豆腐","description":"内酯豆腐倒扣取出，用刀轻轻划成小块","heat":"无需火候","durationSeconds":120,"tip":"盒底剪角再倒扣，豆腐不破"},{"title":"切皮蛋","description":"皮蛋剥壳切成小瓣","heat":"无需火候","durationSeconds":90,"tip":"刀蘸点水切，蛋黄不粘刀"},{"title":"摆盘","description":"豆腐块垫底，皮蛋瓣铺在上面","heat":"无需火候","durationSeconds":60,"tip":"轻拿轻放，保持豆腐完整"},{"title":"调味","description":"淋生抽、香油，撒葱花即可","heat":"无需火候","durationSeconds":30,"tip":"生抽别太多，会盖住豆香"}]',
+ 0),
+(42, '干锅花菜', '干香微辣，越吃越香', '/images/42.jpg',
+ 4.6, 20, 220, '简单', '川菜', '香辣,下饭', 78,
+ '[{"name":"有机花菜","amount":"400g","iconName":"leaf"},{"name":"五花肉","amount":"100g","iconName":"beef"},{"name":"干辣椒","amount":"6个","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"},{"name":"豆瓣酱","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"撕花菜","description":"花菜掰成小朵，用淡盐水浸泡10分钟后沥干","heat":"无需火候","durationSeconds":600,"tip":"手撕比刀切更入味，断面不规则更挂汁"},{"title":"煸花菜","description":"热锅少油下花菜中火干煸3分钟至边缘微焦盛出","heat":"中火","durationSeconds":180,"tip":"先干煸逼出水分，成品才不软塌"},{"title":"煸肉","description":"下五花肉片煸至出油微卷","heat":"中火","durationSeconds":120,"tip":"肉片煸出油后更香，也能减少用油"},{"title":"炒底料","description":"加豆瓣酱、干辣椒、蒜片小火炒出红油","heat":"小火","durationSeconds":90,"tip":"豆瓣酱一定要炒出红油才够香"},{"title":"合炒","description":"倒回花菜，加生抽和少许糖大火翻炒均匀出锅","heat":"大火","durationSeconds":90,"tip":"最后大火收一下锅气更足"}]',
+ 0),
+(43, '麻辣香锅', '麻辣鲜香，一锅百味', '/images/43.jpg',
+ 4.8, 35, 480, '中等', '川菜', '麻辣,聚会', 74,
+ '[{"name":"虾","amount":"200g","iconName":"fish"},{"name":"午餐肉","amount":"150g","iconName":"beef"},{"name":"土豆片","amount":"150g","iconName":"leaf"},{"name":"藕片","amount":"150g","iconName":"leaf"},{"name":"香锅底料","amount":"1包","iconName":"flask"},{"name":"干辣椒","amount":"10个","iconName":"flask"}]',
+ '[{"title":"备料","description":"土豆、藕切薄片泡水，虾开背去虾线，午餐肉切片","heat":"无需火候","durationSeconds":600,"tip":"土豆藕片泡水去淀粉，炒时不易糊"},{"title":"焯配菜","description":"水烧开依次焯藕片、土豆片至八成熟捞出控水","heat":"大火","durationSeconds":300,"tip":"耐煮的先下、易熟的后下"},{"title":"炸虾","description":"热油将虾炸至变色卷起捞出","heat":"大火","durationSeconds":120,"tip":"油温高一点，虾肉才弹"},{"title":"炒底料","description":"锅留底油，下香锅底料和干辣椒小火炒香","heat":"小火","durationSeconds":120,"tip":"底料炒香是灵魂，火大易糊苦"},{"title":"合炒","description":"下所有配料大火翻炒2分钟，收干汤汁出锅","heat":"大火","durationSeconds":120,"tip":"大火快炒收掉水汽，味道才浓"}]',
+ 0),
+(44, '白切鸡', '皮爽肉滑，原汁原味', '/images/44.jpg',
+ 4.8, 45, 300, '中等', '粤菜', '清淡,原味', 78,
+ '[{"name":"清远鸡","amount":"半只","iconName":"beef"},{"name":"姜","amount":"1块","iconName":"leaf"},{"name":"小葱","amount":"3根","iconName":"leaf"},{"name":"姜蓉","amount":"3勺","iconName":"garlic"},{"name":"花生油","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"浸煮","description":"水加姜葱烧开，放入整鸡保持微沸浸煮18分钟","heat":"小火","durationSeconds":1080,"tip":"水面似开非开，鸡肉才嫩不柴"},{"title":"过冰水","description":"捞出立即投入冰水浸10分钟，至鸡皮紧实","heat":"无需火候","durationSeconds":600,"tip":"热胀冷缩让鸡皮爽脆弹牙"},{"title":"斩件","description":"沥干后斩成均匀块状，皮面朝上摆盘","heat":"无需火候","durationSeconds":240,"tip":"刀口干净利落，摆盘才整齐"},{"title":"调姜蓉","description":"姜蓉加盐，浇上烧热的花生油激香","heat":"无需火候","durationSeconds":120,"tip":"油要烧到冒烟再泼，姜香才出得来"},{"title":"蘸食","description":"鸡肉配姜蓉蘸碟食用","heat":"无需火候","durationSeconds":30,"tip":"趁温热吃口感最佳"}]',
+ 0),
+(45, '豉汁蒸排骨', '豉香浓郁，嫩滑多汁', '/images/45.jpg',
+ 4.7, 25, 340, '简单', '粤菜', '鲜香,下饭', 80,
+ '[{"name":"肋排","amount":"400g","iconName":"beef"},{"name":"豆豉","amount":"2勺","iconName":"flask"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"泡排骨","description":"肋排剁小块，用清水浸泡20分钟去血水，沥干","heat":"无需火候","durationSeconds":1200,"tip":"泡出血水是去腥关键，蒸出来才清爽"},{"title":"剁豆豉","description":"豆豉剁碎，与蒜末、生抽、糖、淀粉拌成腌料","heat":"无需火候","durationSeconds":120,"tip":"豆豉剁碎更出味，也更好挂在排骨上"},{"title":"腌制","description":"排骨加腌料抓匀，腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"加淀粉锁住水分，蒸后更嫩"},{"title":"上锅蒸","description":"平铺入盘，水开后大火蒸12分钟","heat":"大火","durationSeconds":720,"tip":"一定要水开后再上锅，火足才嫩"},{"title":"出锅","description":"撒葱花，淋少许热油即成","heat":"无需火候","durationSeconds":30,"tip":"蒸好立即吃，久放会变老"}]',
+ 0),
+(46, '蜜汁叉烧', '甜香红亮，外焦里嫩', '/images/46.jpg',
+ 4.7, 90, 420, '中等', '粤菜', '甜香,宴客', 74,
+ '[{"name":"梅花肉","amount":"500g","iconName":"beef"},{"name":"叉烧酱","amount":"3勺","iconName":"flask"},{"name":"蜂蜜","amount":"2勺","iconName":"flask"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"腌制","description":"梅花肉切长条，加叉烧酱、生抽、蒜末抓匀，冷藏腌4小时以上","heat":"无需火候","durationSeconds":14400,"tip":"腌过夜更入味，中途翻一次面"},{"title":"预热","description":"烤箱200度预热10分钟，烤盘加水防干","heat":"无需火候","durationSeconds":600,"tip":"底层放水盘，湿度足肉才不柴"},{"title":"初烤","description":"肉条放烤架，烤20分钟后翻面再烤15分钟","heat":"无需火候","durationSeconds":2100,"tip":"烤架架空，受热更均匀"},{"title":"刷蜜","description":"蜂蜜加少许热水调稀，刷满肉条表面","heat":"无需火候","durationSeconds":60,"tip":"蜜要刷两遍，色泽才红亮"},{"title":"复烤切片","description":"再烤8分钟至表面焦糖化，取出晾5分钟切片","heat":"无需火候","durationSeconds":480,"tip":"晾一会再切，肉汁不流失"}]',
+ 0),
+(47, '干炒牛河', '镬气十足，根根分明', '/images/47.jpg',
+ 4.7, 20, 480, '中等', '粤菜', '主食,镬气', 74,
+ '[{"name":"河粉","amount":"300g","iconName":"leaf"},{"name":"牛里脊","amount":"200g","iconName":"beef"},{"name":"豆芽","amount":"100g","iconName":"leaf"},{"name":"韭黄","amount":"50g","iconName":"leaf"},{"name":"老抽","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"腌牛肉","description":"牛肉逆纹切薄片，加生抽、淀粉、油抓匀腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"封一层油，下锅才不粘"},{"title":"滑炒牛肉","description":"热锅下油，牛肉快速滑炒至变色盛出","heat":"大火","durationSeconds":60,"tip":"牛肉只需断生，回锅还要再炒"},{"title":"炒配菜","description":"下豆芽、韭黄大火快炒30秒","heat":"大火","durationSeconds":30,"tip":"配菜炒至半生即可，保持脆爽"},{"title":"下河粉","description":"倒入河粉，用筷子轻轻抖散，加老抽上色","heat":"大火","durationSeconds":90,"tip":"用筷子而非铲，河粉才不断"},{"title":"合炒","description":"回锅牛肉，沿锅边淋生抽大火翻炒均匀出锅","heat":"大火","durationSeconds":60,"tip":"全程大火才有镬气，动作要快"}]',
+ 0),
+(48, '蒸水蛋', '嫩如布丁，入口即化', '/images/48.jpg',
+ 4.7, 15, 130, '简单', '粤菜', '嫩滑,快手', 88,
+ '[{"name":"鸡蛋","amount":"3个","iconName":"egg"},{"name":"温水","amount":"240ml","iconName":"flask"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"香油","amount":"几滴","iconName":"flask"},{"name":"小葱","amount":"1根","iconName":"leaf"}]',
+ '[{"title":"打蛋","description":"鸡蛋打散，加少许盐搅匀至无明显蛋清","heat":"无需火候","durationSeconds":120,"tip":"蛋液要打透，蒸出来才细腻"},{"title":"调水","description":"兑入约40度温水，蛋水比1比1.5，搅匀","heat":"无需火候","durationSeconds":90,"tip":"过冷过热的水都会让蛋羹起蜂窝"},{"title":"过筛","description":"蛋液过细筛两遍，撇去表面浮沫","heat":"无需火候","durationSeconds":120,"tip":"过筛去气泡是表面光滑的关键"},{"title":"蒸制","description":"盖保鲜膜扎孔，水开后中小火蒸10分钟","heat":"中小火","durationSeconds":600,"tip":"盖膜防水汽滴落，中小火才嫩"},{"title":"调味","description":"淋生抽和香油，撒葱花","heat":"无需火候","durationSeconds":30,"tip":"轻晃盘子会颤即熟"}]',
+ 0),
+(49, '剁椒鱼头', '鲜辣开胃，湖南名菜', '/images/49.jpg',
+ 4.8, 30, 280, '中等', '湘菜', '鲜辣,宴客', 76,
+ '[{"name":"胖头鱼头","amount":"1个","iconName":"fish"},{"name":"剁椒","amount":"4勺","iconName":"flask"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"姜","amount":"1块","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"处理鱼头","description":"鱼头对半剖开洗净，用料酒和盐抹匀腌10分钟","heat":"无需火候","durationSeconds":600,"tip":"鱼鳃和黑膜一定要去净，否则腥"},{"title":"爆香剁椒","description":"热油下蒜末和剁椒小火炒香","heat":"小火","durationSeconds":120,"tip":"剁椒炒过再蒸，香气才浓"},{"title":"铺料","description":"姜片垫盘，鱼头平摊，铺满炒好的剁椒","heat":"无需火候","durationSeconds":120,"tip":"鱼头下垫筷子架空，受热更匀"},{"title":"蒸鱼","description":"水开后大火蒸12分钟","heat":"大火","durationSeconds":720,"tip":"鱼眼凸出、肉能离骨即熟，别蒸过头"},{"title":"泼油","description":"撒葱花，淋一勺热油激香","heat":"无需火候","durationSeconds":30,"tip":"泼油能激出剁椒和葱的香气"}]',
+ 1),
+(50, '辣椒炒肉', '油亮下饭，湘味十足', '/images/50.jpg',
+ 4.7, 15, 330, '简单', '湘菜', '下饭,香辣', 82,
+ '[{"name":"螺丝椒","amount":"250g","iconName":"leaf"},{"name":"五花肉","amount":"200g","iconName":"beef"},{"name":"豆豉","amount":"1勺","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"},{"name":"生抽","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切配","description":"辣椒斜切成段并拍松，五花肉切薄片","heat":"无需火候","durationSeconds":300,"tip":"辣椒拍松更易出味，口感也更软"},{"title":"干煸辣椒","description":"热锅不放油，下辣椒加少许盐干煸至虎皮状盛出","heat":"大火","durationSeconds":180,"tip":"干煸去生涩，辣椒香更浓"},{"title":"煸肉","description":"下五花肉煸炒至出油微卷","heat":"中火","durationSeconds":150,"tip":"肉煸到微微焦边，香味最足"},{"title":"炒香","description":"加豆豉、蒜片炒香，淋生抽炒匀","heat":"中火","durationSeconds":60,"tip":"豆豉是湘菜灵魂，提鲜又增香"},{"title":"合炒","description":"倒回辣椒大火翻炒1分钟出锅","heat":"大火","durationSeconds":60,"tip":"辣椒回锅只需炒匀，久炒会发黄"}]',
+ 0),
+(51, '农家小炒肉', '咸香微辣，米饭杀手', '/images/51.jpg',
+ 4.6, 15, 360, '简单', '湘菜', '下饭,香辣', 80,
+ '[{"name":"前腿肉","amount":"300g","iconName":"beef"},{"name":"青红椒","amount":"200g","iconName":"leaf"},{"name":"豆豉","amount":"1勺","iconName":"flask"},{"name":"蒜","amount":"4瓣","iconName":"garlic"},{"name":"老抽","amount":"半勺","iconName":"flask"}]',
+ '[{"title":"分切","description":"肥瘦分开切成薄片，青红椒切滚刀块","heat":"无需火候","durationSeconds":300,"tip":"肥瘦分开下锅，先煸肥再下瘦"},{"title":"煸肥肉","description":"冷锅下肥肉片，中小火煸出油至微焦","heat":"中小火","durationSeconds":150,"tip":"用煸出来的油炒菜最香"},{"title":"炒瘦肉","description":"下瘦肉片大火快炒至变色","heat":"大火","durationSeconds":90,"tip":"瘦肉久炒会柴，变色即够"},{"title":"下配料","description":"加豆豉、蒜片、青红椒翻炒1分钟","heat":"大火","durationSeconds":60,"tip":"辣椒断生即可，保持脆爽"},{"title":"调味","description":"加老抽上色、生抽提鲜，炒匀出锅","heat":"大火","durationSeconds":45,"tip":"老抽只上色，别放多否则发黑"}]',
+ 0),
+(52, '口味虾', '麻辣鲜香，夏夜必备', '/images/52.jpg',
+ 4.8, 40, 380, '中等', '湘菜', '麻辣,夜宵', 72,
+ '[{"name":"小龙虾","amount":"1kg","iconName":"fish"},{"name":"干辣椒","amount":"10个","iconName":"flask"},{"name":"花椒","amount":"1勺","iconName":"flask"},{"name":"郫县豆瓣","amount":"2勺","iconName":"flask"},{"name":"姜蒜","amount":"适量","iconName":"garlic"},{"name":"啤酒","amount":"1罐","iconName":"flask"}]',
+ '[{"title":"刷洗","description":"小龙虾用刷子逐只刷净，剪去虾头和虾线","heat":"无需火候","durationSeconds":1200,"tip":"刷洗务必彻底，卫生第一"},{"title":"炸虾","description":"宽油烧至七成热，下虾炸2分钟至变红捞出","heat":"大火","durationSeconds":120,"tip":"过油后虾壳更酥，肉也更紧实"},{"title":"炒底料","description":"锅留底油，下豆瓣、干辣椒、花椒、姜蒜小火炒香","heat":"小火","durationSeconds":150,"tip":"小火慢炒出红油，火大易焦"},{"title":"焖煮","description":"倒入小龙虾翻炒，加啤酒没过，大火烧开转中火焖15分钟","heat":"中火","durationSeconds":900,"tip":"啤酒去腥增香，比清水更好吃"},{"title":"收汁","description":"大火收浓汤汁，加糖和盐调味出锅","heat":"大火","durationSeconds":180,"tip":"汁收浓裹在虾上才够味"}]',
+ 0),
+(53, '糖醋鲤鱼', '外酥里嫩，酸甜挂汁', '/images/53.jpg',
+ 4.7, 35, 420, '中等', '鲁菜', '酸甜,宴客', 72,
+ '[{"name":"鲤鱼","amount":"1条","iconName":"fish"},{"name":"番茄酱","amount":"3勺","iconName":"flask"},{"name":"白糖","amount":"3勺","iconName":"flask"},{"name":"白醋","amount":"2勺","iconName":"flask"},{"name":"淀粉","amount":"适量","iconName":"flask"},{"name":"姜蒜","amount":"适量","iconName":"garlic"}]',
+ '[{"title":"处理鱼","description":"鲤鱼去鳞去内脏洗净，两面斜刀打花刀","heat":"无需火候","durationSeconds":600,"tip":"花刀深至鱼骨，切得匀才好看"},{"title":"挂糊","description":"鱼身拍匀干淀粉，抖去多余粉","heat":"无需火候","durationSeconds":120,"tip":"粉太厚口感发硬，薄薄一层即可"},{"title":"炸鱼","description":"宽油烧至六成热，提着鱼尾下锅炸至金黄定型","heat":"中火","durationSeconds":420,"tip":"先定型再翻面，鱼身才不散"},{"title":"调糖醋汁","description":"锅中留底油，下番茄酱、糖、醋、盐和清水熬至浓稠","heat":"小火","durationSeconds":180,"tip":"糖醋比约3比2，尝味后微调"},{"title":"浇汁","description":"将糖醋汁均匀浇在炸好的鱼身上","heat":"无需火候","durationSeconds":60,"tip":"现炸现浇，才能外酥里嫩"}]',
+ 1),
+(54, '黄焖鸡', '浓香下饭，一锅满足', '/images/54.jpg',
+ 4.6, 40, 400, '简单', '鲁菜', '下饭,家常', 82,
+ '[{"name":"鸡腿肉","amount":"500g","iconName":"beef"},{"name":"香菇","amount":"6朵","iconName":"leaf"},{"name":"青椒","amount":"1个","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"黄豆酱","amount":"1勺","iconName":"flask"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"切块","description":"鸡腿肉剁成小块，香菇泡发切块，青椒切块","heat":"无需火候","durationSeconds":300,"tip":"鸡腿肉比鸡胸嫩，久焖不柴"},{"title":"煸炒","description":"热锅下油，鸡块加姜片煸炒至表面微黄","heat":"中火","durationSeconds":240,"tip":"煸出鸡油，成品更香"},{"title":"调味","description":"加黄豆酱、生抽、老抽炒匀上色","heat":"中火","durationSeconds":90,"tip":"黄豆酱是黄焖味的关键，不可省"},{"title":"焖煮","description":"加水没过鸡块，放入香菇，大火烧开转小火焖20分钟","heat":"小火","durationSeconds":1200,"tip":"香菇同焖能吸足鸡汤，更入味"},{"title":"收汁","description":"下青椒块，大火收汁至浓稠","heat":"大火","durationSeconds":150,"tip":"留一点汤汁拌饭最香"}]',
+ 0),
+(55, '四喜丸子', '软糯多汁，喜庆大菜', '/images/55.jpg',
+ 4.7, 60, 460, '中等', '鲁菜', '宴客,喜庆', 70,
+ '[{"name":"猪肉末","amount":"500g","iconName":"beef"},{"name":"马蹄","amount":"5个","iconName":"leaf"},{"name":"鸡蛋","amount":"1个","iconName":"egg"},{"name":"馒头","amount":"半个","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"淀粉","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"拌馅","description":"肉末加蛋液、馒头碎、马蹄碎、姜末和调料，顺一个方向搅打上劲","heat":"无需火候","durationSeconds":600,"tip":"同一方向搅打才能出胶，丸子才不散"},{"title":"摔打","description":"取肉馅反复摔打十余次，团成四个大丸子","heat":"无需火候","durationSeconds":300,"tip":"摔打排空气，成品更紧实"},{"title":"炸定型","description":"油温六成热下丸子，炸至表面金黄定型捞出","heat":"中火","durationSeconds":300,"tip":"油温低会散，高会外焦里生"},{"title":"炖煮","description":"丸子入锅加高汤、生抽、糖，小火炖25分钟","heat":"小火","durationSeconds":1500,"tip":"小火慢炖才能里外都入味"},{"title":"勾芡","description":"捞出装盘，原汤加淀粉水勾芡后浇上","heat":"中火","durationSeconds":120,"tip":"薄芡挂汁即可，太厚会腻"}]',
+ 1),
+(56, '醋溜白菜', '酸爽清脆，解腻开胃', '/images/56.jpg',
+ 4.5, 12, 120, '简单', '鲁菜', '素食,清爽', 86,
+ '[{"name":"白菜帮","amount":"400g","iconName":"leaf"},{"name":"干辣椒","amount":"3个","iconName":"flask"},{"name":"香醋","amount":"2勺","iconName":"flask"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"切片","description":"白菜帮斜刀切成薄片，菜叶切大块分开放","heat":"无需火候","durationSeconds":240,"tip":"斜刀切断面大，更易挂汁入味"},{"title":"爆香","description":"热锅下油，放干辣椒和蒜片小火爆香","heat":"小火","durationSeconds":60,"tip":"干辣椒别炒黑，一变色就下菜"},{"title":"炒菜帮","description":"先下白菜帮大火翻炒1分钟","heat":"大火","durationSeconds":60,"tip":"菜帮难熟先下，菜叶易熟后放"},{"title":"下菜叶","description":"加菜叶继续大火快炒至断生","heat":"大火","durationSeconds":60,"tip":"全程大火，炒出来才脆不发水"},{"title":"调味","description":"沿锅边淋香醋和生抽，加盐快速炒匀出锅","heat":"大火","durationSeconds":30,"tip":"醋沿锅边淋才够香，早放会挥发"}]',
+ 0),
+(57, '东坡肉', '酥而不烂，肥而不腻', '/images/57.jpg',
+ 4.9, 120, 560, '中等', '浙菜', '宴客,经典', 70,
+ '[{"name":"五花肉","amount":"800g","iconName":"beef"},{"name":"黄酒","amount":"300ml","iconName":"flask"},{"name":"生抽","amount":"3勺","iconName":"flask"},{"name":"老抽","amount":"1勺","iconName":"flask"},{"name":"冰糖","amount":"40g","iconName":"flask"},{"name":"小葱","amount":"1把","iconName":"leaf"}]',
+ '[{"title":"焯水切块","description":"五花肉整块冷水焯水，切成5厘米见方的大块","heat":"大火","durationSeconds":600,"tip":"肉块要大，久炖才不散"},{"title":"垫葱铺肉","description":"砂锅底部铺满葱段和姜片，肉块皮朝下码好","heat":"无需火候","durationSeconds":180,"tip":"垫葱防粘底，还能去腥增香"},{"title":"调味","description":"加黄酒、生抽、老抽和冰糖，不加一滴水","heat":"无需火候","durationSeconds":120,"tip":"全用黄酒炖，肉香更醇厚"},{"title":"慢炖","description":"大火烧开转最小火，加盖焖90分钟","heat":"小火","durationSeconds":5400,"tip":"火要极小，似开非开，肉才酥而不烂"},{"title":"收汁","description":"肉块翻面皮朝上，中火收汁至红亮","heat":"中火","durationSeconds":600,"tip":"翻面再炖20分钟，皮糯汁亮"}]',
+ 1),
+(58, '西湖醋鱼', '鱼肉鲜嫩，酸甜带姜', '/images/58.jpg',
+ 4.6, 25, 240, '中等', '浙菜', '酸甜,清鲜', 72,
+ '[{"name":"草鱼","amount":"1条","iconName":"fish"},{"name":"香醋","amount":"3勺","iconName":"flask"},{"name":"白糖","amount":"3勺","iconName":"flask"},{"name":"姜末","amount":"适量","iconName":"leaf"},{"name":"生抽","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"剖鱼","description":"草鱼去鳞洗净，从背部剖开成两片","heat":"无需火候","durationSeconds":300,"tip":"鱼要活杀，肉质才紧实"},{"title":"汆鱼","description":"水烧至微沸，放入鱼身保持似开非开浸煮5分钟","heat":"小火","durationSeconds":300,"tip":"水不能大滚，否则鱼肉会散"},{"title":"摆盘","description":"捞出沥干，皮朝上平铺入盘中","heat":"无需火候","durationSeconds":120,"tip":"动作轻缓，保持鱼形完整"},{"title":"调汁","description":"锅中加鱼汤、香醋、糖、生抽和姜末熬至微稠","heat":"中火","durationSeconds":180,"tip":"醋要后放，久煮酸味会散"},{"title":"浇汁","description":"趁热将糖醋汁浇在鱼身上","heat":"无需火候","durationSeconds":30,"tip":"趁热吃，凉了会有土腥味"}]',
+ 0),
+(59, '龙井虾仁', '清鲜滑嫩，茶香四溢', '/images/59.jpg',
+ 4.7, 20, 200, '中等', '浙菜', '清鲜,宴客', 70,
+ '[{"name":"河虾仁","amount":"300g","iconName":"fish"},{"name":"龙井茶","amount":"5g","iconName":"leaf"},{"name":"蛋清","amount":"1个","iconName":"egg"},{"name":"淀粉","amount":"1勺","iconName":"flask"},{"name":"料酒","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"泡茶","description":"龙井用80度水冲泡1分钟，茶叶与茶汤分开备用","heat":"无需火候","durationSeconds":60,"tip":"水温别太高，否则茶叶发苦"},{"title":"腌虾仁","description":"虾仁加蛋清、盐、淀粉抓匀，冷藏醒15分钟","heat":"无需火候","durationSeconds":900,"tip":"上浆后冷藏，虾仁更弹嫩"},{"title":"滑油","description":"热锅温油，下虾仁快速滑至变色捞出","heat":"中火","durationSeconds":60,"tip":"油温三四成即可，高温虾仁会老"},{"title":"翻炒","description":"锅留底油，倒回虾仁，加茶叶和少许茶汤快速翻炒","heat":"大火","durationSeconds":30,"tip":"茶叶最后放，保持清香"},{"title":"出锅","description":"烹入料酒，勾薄芡炒匀出锅","heat":"大火","durationSeconds":30,"tip":"芡要薄，仅让汤汁挂住虾仁"}]',
+ 0),
+(60, '松鼠鳜鱼', '造型华丽，酸甜酥脆', '/images/60.jpg',
+ 4.8, 45, 440, '困难', '苏菜', '酸甜,宴客', 66,
+ '[{"name":"鳜鱼","amount":"1条","iconName":"fish"},{"name":"番茄酱","amount":"4勺","iconName":"flask"},{"name":"白糖","amount":"3勺","iconName":"flask"},{"name":"白醋","amount":"2勺","iconName":"flask"},{"name":"淀粉","amount":"适量","iconName":"flask"},{"name":"松子仁","amount":"30g","iconName":"leaf"}]',
+ '[{"title":"处理鱼","description":"鳜鱼去骨，鱼肉面打十字花刀至皮不断","heat":"无需火候","durationSeconds":900,"tip":"花刀要均匀，成菜才像松鼠毛"},{"title":"腌制挂粉","description":"用盐和料酒腌10分钟，拍满干淀粉并抖散刀口","heat":"无需火候","durationSeconds":300,"tip":"每根肉条都要沾粉，否则炸不开"},{"title":"炸鱼","description":"提鱼尾下六成热油锅，定型后整条炸至金黄","heat":"中火","durationSeconds":360,"tip":"先定形再放手，花刀才会立起来"},{"title":"调汁","description":"番茄酱、糖、醋加水和盐熬至浓稠","heat":"小火","durationSeconds":180,"tip":"酸甜比例略偏甜更适合宴客"},{"title":"浇汁撒料","description":"糖醋汁浇在鱼身，撒松子仁即成","heat":"无需火候","durationSeconds":60,"tip":"上桌时还会滋滋响才够地道"}]',
+ 0),
+(61, '荷叶粉蒸肉', '荷香软糯，肥而不腻', '/images/61.jpg',
+ 4.6, 90, 480, '中等', '苏菜', '软糯,宴客', 68,
+ '[{"name":"五花肉","amount":"500g","iconName":"beef"},{"name":"蒸肉米粉","amount":"100g","iconName":"flask"},{"name":"干荷叶","amount":"2张","iconName":"leaf"},{"name":"腐乳","amount":"1块","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"泡荷叶","description":"干荷叶用温水泡软洗净","heat":"无需火候","durationSeconds":1200,"tip":"泡软后不易破，包起来更服帖"},{"title":"腌肉","description":"五花肉切厚片，加腐乳汁、生抽、糖腌30分钟","heat":"无需火候","durationSeconds":1800,"tip":"腐乳是粉蒸肉的灵魂，提味上色"},{"title":"裹粉","description":"肉片逐片裹匀蒸肉米粉，静置10分钟回潮","heat":"无需火候","durationSeconds":600,"tip":"米粉吸水后蒸出来才不干"},{"title":"包裹","description":"荷叶铺开，肉片码好包紧，收口朝下","heat":"无需火候","durationSeconds":240,"tip":"包紧实，香气不外泄"},{"title":"蒸制","description":"上锅大火蒸40分钟后转中火再蒸20分钟","heat":"大火转中火","durationSeconds":3600,"tip":"时间够足，肉才酥糯脱脂"}]',
+ 0),
+(62, '土豆炖牛肉', '汤汁浓稠，软烂入味', '/images/62.jpg',
+ 4.7, 90, 420, '中等', '家常热菜', '下饭,饱腹', 80,
+ '[{"name":"牛腩","amount":"500g","iconName":"beef"},{"name":"土豆","amount":"2个","iconName":"leaf"},{"name":"胡萝卜","amount":"1根","iconName":"leaf"},{"name":"番茄","amount":"1个","iconName":"tomato"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"八角","amount":"2个","iconName":"flask"}]',
+ '[{"title":"焯水","description":"牛腩切块冷水下锅，加姜片料酒焯水后温水冲净","heat":"大火","durationSeconds":420,"tip":"冷水下锅血沫才逼得干净"},{"title":"炒香","description":"热油下洋葱炒软，加番茄炒出沙","heat":"中火","durationSeconds":240,"tip":"番茄炒出沙是汤浓的关键"},{"title":"炖肉","description":"下牛腩翻炒，加八角、生抽和开水没过，小火炖60分钟","heat":"小火","durationSeconds":3600,"tip":"一定加开水，冷水会让肉骤紧变硬"},{"title":"加配菜","description":"下土豆和胡萝卜块，继续炖20分钟","heat":"小火","durationSeconds":1200,"tip":"土豆后放，久炖会化在汤里"},{"title":"调味","description":"加盐调味，大火略收汁即可","heat":"大火","durationSeconds":180,"tip":"盐最后放，早放牛肉不易烂"}]',
+ 0),
+(63, '香菇滑鸡', '鲜香滑嫩，粤式家常', '/images/63.jpg',
+ 4.6, 25, 320, '简单', '家常菜', '鲜香,下饭', 82,
+ '[{"name":"鸡腿肉","amount":"400g","iconName":"beef"},{"name":"香菇","amount":"6朵","iconName":"leaf"},{"name":"姜丝","amount":"适量","iconName":"leaf"},{"name":"蚝油","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切件","description":"鸡腿肉切小块，香菇泡发切片","heat":"无需火候","durationSeconds":300,"tip":"带皮鸡腿肉口感最好"},{"title":"腌制","description":"鸡肉加姜丝、蚝油、生抽、淀粉和油抓匀腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"封油锁水，炒出来才滑"},{"title":"爆香","description":"热锅下油，爆香姜丝","heat":"中火","durationSeconds":45,"tip":"姜丝能进一步去腥"},{"title":"炒鸡","description":"下鸡肉大火快炒至变色","heat":"大火","durationSeconds":120,"tip":"表面变白即可，别炒老"},{"title":"加香菇焖","description":"下香菇，加少许水加盖焖3分钟，收汁出锅","heat":"中火","durationSeconds":180,"tip":"焖一下让香菇味渗进鸡肉"}]',
+ 0),
+(64, '木耳炒鸡蛋', '简单快手，营养均衡', '/images/64.jpg',
+ 4.5, 10, 180, '简单', '家常菜', '素食,快手', 88,
+ '[{"name":"鸡蛋","amount":"3个","iconName":"egg"},{"name":"干木耳","amount":"20g","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"蒜","amount":"2瓣","iconName":"garlic"}]',
+ '[{"title":"泡发","description":"干木耳温水泡发撕小朵，焯水1分钟沥干","heat":"大火","durationSeconds":60,"tip":"泡发后焯水，炒时不易爆锅"},{"title":"炒蛋","description":"鸡蛋加少许盐打散，热油炒成大块盛出","heat":"中火","durationSeconds":90,"tip":"油热再下蛋，炒出蓬松感"},{"title":"爆香","description":"锅留底油，下蒜末爆香","heat":"小火","durationSeconds":30,"tip":"蒜末小火煸香不焦"},{"title":"炒木耳","description":"下木耳大火翻炒1分钟","heat":"大火","durationSeconds":60,"tip":"木耳下锅易溅油，可先沥干水分"},{"title":"合炒","description":"倒回鸡蛋，加生抽和盐炒匀，撒葱花出锅","heat":"大火","durationSeconds":45,"tip":"合炒要快，鸡蛋才嫩"}]',
+ 0),
+(65, '手撕包菜', '爽脆酸辣，饭桌常客', '/images/65.jpg',
+ 4.6, 10, 130, '简单', '家常菜', '素食,下饭', 86,
+ '[{"name":"包菜","amount":"400g","iconName":"leaf"},{"name":"干辣椒","amount":"4个","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"},{"name":"香醋","amount":"1勺","iconName":"flask"},{"name":"生抽","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"撕菜","description":"包菜手撕成大片，去掉粗梗","heat":"无需火候","durationSeconds":240,"tip":"手撕断面不规整，更易入味"},{"title":"煸辣椒","description":"热锅下油，放干辣椒和蒜片小火煸香","heat":"小火","durationSeconds":45,"tip":"辣椒一变色即可，别炒糊"},{"title":"大火炒","description":"下包菜大火快速翻炒1分钟","heat":"大火","durationSeconds":60,"tip":"全程大火，包菜才脆不出水"},{"title":"调味","description":"沿锅边淋香醋，加生抽和盐炒匀","heat":"大火","durationSeconds":30,"tip":"醋沿锅边淋香气更足"},{"title":"出锅","description":"断生即出锅，保留脆感","heat":"大火","durationSeconds":20,"tip":"炒久了会软塌发黄"}]',
+ 0),
+(66, '醋溜土豆丝', '爽脆酸香，家常快手', '/images/66.jpg',
+ 4.5, 12, 150, '简单', '家常菜', '素食,快手', 88,
+ '[{"name":"土豆","amount":"2个","iconName":"leaf"},{"name":"青椒","amount":"1个","iconName":"leaf"},{"name":"干辣椒","amount":"3个","iconName":"flask"},{"name":"香醋","amount":"2勺","iconName":"flask"},{"name":"蒜片","amount":"2瓣","iconName":"garlic"}]',
+ '[{"title":"切丝","description":"土豆去皮切细丝，用清水反复冲洗去淀粉","heat":"无需火候","durationSeconds":360,"tip":"洗去淀粉，炒出来才清爽不粘"},{"title":"备料","description":"青椒切丝，蒜切片，干辣椒剪段","heat":"无需火候","durationSeconds":120,"tip":"土豆丝泡水防止氧化发黑"},{"title":"爆香","description":"热锅下油，下干辣椒和蒜片小火煸香","heat":"小火","durationSeconds":45,"tip":"先小火爆香，再转大火炒菜"},{"title":"炒丝","description":"沥干土豆丝下锅大火翻炒1分钟，加青椒丝","heat":"大火","durationSeconds":60,"tip":"大火快炒，土豆丝才脆"},{"title":"调味","description":"沿锅边淋香醋，加盐和生抽炒匀出锅","heat":"大火","durationSeconds":45,"tip":"醋分两次放，香味更浓"}]',
+ 0),
+(67, '蒜蓉粉丝娃娃菜', '鲜甜软糯，蒜香扑鼻', '/images/67.jpg',
+ 4.6, 20, 160, '简单', '家常菜', '素食,清淡', 84,
+ '[{"name":"娃娃菜","amount":"2棵","iconName":"leaf"},{"name":"龙口粉丝","amount":"1把","iconName":"leaf"},{"name":"蒜末","amount":"6瓣","iconName":"garlic"},{"name":"蒸鱼豉油","amount":"2勺","iconName":"flask"},{"name":"小米椒","amount":"2个","iconName":"flask"}]',
+ '[{"title":"泡粉丝","description":"粉丝用温水泡软，剪短备用","heat":"无需火候","durationSeconds":600,"tip":"泡软即可，别泡烂"},{"title":"切菜","description":"娃娃菜纵向切成四瓣，铺在盘底","heat":"无需火候","durationSeconds":180,"tip":"菜帮朝外摆，受热更匀"},{"title":"炒蒜蓉","description":"热油下蒜末小火炒香，加蒸鱼豉油调成蒜蓉汁","heat":"小火","durationSeconds":90,"tip":"蒜末炒一半生一半，蒜香有层次"},{"title":"摆盘蒸","description":"粉丝铺在菜上，浇蒜蓉汁，水开后大火蒸8分钟","heat":"大火","durationSeconds":480,"tip":"水开上锅，蒸久菜会出水"},{"title":"泼油","description":"撒小米椒圈，淋热油激香","heat":"无需火候","durationSeconds":30,"tip":"最后泼油，香气最足"}]',
+ 0),
+(68, '家常豆腐', '外焦里嫩，咸鲜下饭', '/images/68.jpg',
+ 4.6, 20, 240, '简单', '家常菜', '素食,下饭', 82,
+ '[{"name":"老豆腐","amount":"400g","iconName":"leaf"},{"name":"青红椒","amount":"各1个","iconName":"leaf"},{"name":"木耳","amount":"30g","iconName":"leaf"},{"name":"豆瓣酱","amount":"1勺","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"切块","description":"老豆腐切成厚三角片，用厨房纸吸干水分","heat":"无需火候","durationSeconds":240,"tip":"吸干水再煎才不粘不溅"},{"title":"煎豆腐","description":"热锅下油，豆腐中火煎至两面金黄盛出","heat":"中火","durationSeconds":300,"tip":"煎定型再翻面，豆腐才不碎"},{"title":"炒配料","description":"锅留底油，下豆瓣酱和蒜末炒香","heat":"小火","durationSeconds":90,"tip":"豆瓣酱炒出红油才够香"},{"title":"合炒","description":"下青红椒和木耳翻炒，倒回豆腐","heat":"大火","durationSeconds":90,"tip":"轻推别用力翻，保持豆腐完整"},{"title":"调味","description":"加生抽、糖和少许水淀粉收汁出锅","heat":"中火","durationSeconds":90,"tip":"薄芡挂汁，豆腐更入味"}]',
+ 0),
+(69, '蚝油牛肉', '滑嫩鲜香，粤式经典', '/images/69.jpg',
+ 4.7, 20, 300, '中等', '家常热菜', '下饭,高蛋白', 80,
+ '[{"name":"牛里脊","amount":"300g","iconName":"beef"},{"name":"西兰花","amount":"150g","iconName":"leaf"},{"name":"蚝油","amount":"2勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"腌牛肉","description":"牛肉逆纹切薄片，加生抽、淀粉、油抓匀腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"加一点小苏打会更嫩，量要极少"},{"title":"焯西兰花","description":"西兰花焯水1分钟捞出过凉","heat":"大火","durationSeconds":60,"tip":"焯水时加少许盐油，颜色更翠绿"},{"title":"滑牛肉","description":"热锅温油，牛肉滑炒至变色立刻盛出","heat":"中火","durationSeconds":60,"tip":"油温别太高，牛肉才嫩"},{"title":"炒香","description":"锅留底油，下蒜片爆香，加蚝油和少许水","heat":"中火","durationSeconds":60,"tip":"蚝油遇热易糊，加少许水稀释"},{"title":"合炒","description":"倒回牛肉和西兰花，大火翻炒挂汁出锅","heat":"大火","durationSeconds":60,"tip":"快炒快出，保持牛肉嫩度"}]',
+ 0),
+(70, '黑椒牛柳', '黑椒浓香，嫩滑多汁', '/images/70.jpg',
+ 4.7, 25, 340, '中等', '家常热菜', '下饭,西式', 78,
+ '[{"name":"牛里脊","amount":"300g","iconName":"beef"},{"name":"洋葱","amount":"1个","iconName":"onion"},{"name":"彩椒","amount":"1个","iconName":"leaf"},{"name":"黑胡椒碎","amount":"1勺","iconName":"flask"},{"name":"蚝油","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切条腌制","description":"牛肉切条，加生抽、淀粉、油和黑胡椒腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"黑胡椒先腌入底味，成品更香"},{"title":"备菜","description":"洋葱和彩椒切条","heat":"无需火候","durationSeconds":180,"tip":"大小与牛柳相近，受热才一致"},{"title":"煎牛柳","description":"热锅下油，牛柳大火煎至两面变色盛出","heat":"大火","durationSeconds":90,"tip":"锅要够热，煎出焦香才好吃"},{"title":"炒配菜","description":"下洋葱和彩椒大火炒1分钟至断生","heat":"大火","durationSeconds":60,"tip":"洋葱略软、彩椒仍脆时最好"},{"title":"合炒调汁","description":"倒回牛柳，加蚝油和黑椒汁大火炒匀出锅","heat":"大火","durationSeconds":60,"tip":"黑椒汁最后放，香气不散"}]',
+ 0),
+(71, '铁板豆腐', '焦香入味，香辣过瘾', '/images/71.jpg',
+ 4.6, 20, 260, '简单', '家常热菜', '下饭,香辣', 78,
+ '[{"name":"老豆腐","amount":"400g","iconName":"leaf"},{"name":"五花肉末","amount":"80g","iconName":"beef"},{"name":"小米椒","amount":"3个","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"切块","description":"老豆腐切成厚片，吸干表面水分","heat":"无需火候","durationSeconds":180,"tip":"水分吸干，煎时不易溅油"},{"title":"煎豆腐","description":"平底锅中火煎至两面金黄","heat":"中火","durationSeconds":300,"tip":"少翻动，一面定型再翻"},{"title":"炒肉末","description":"另起锅下肉末炒散出油","heat":"中火","durationSeconds":120,"tip":"肉末炒干些更香"},{"title":"炒香","description":"加蒜末、小米椒炒香，加生抽和少许水","heat":"小火","durationSeconds":60,"tip":"小米椒按口味增减"},{"title":"淋浇","description":"将肉末酱汁浇在豆腐上，撒葱花","heat":"无需火候","durationSeconds":60,"tip":"铁板预热再上桌更有气氛"}]',
+ 0),
+(72, '香菇酿肉', '造型精致，鲜香多汁', '/images/72.jpg',
+ 4.6, 30, 300, '中等', '家常热菜', '宴客,鲜香', 76,
+ '[{"name":"香菇","amount":"10朵","iconName":"leaf"},{"name":"猪肉末","amount":"250g","iconName":"beef"},{"name":"虾仁","amount":"50g","iconName":"fish"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"处理香菇","description":"香菇去蒂洗净，蒂切碎备用","heat":"无需火候","durationSeconds":300,"tip":"选大小均匀的香菇，成品才整齐"},{"title":"调馅","description":"肉末加虾仁碎、香菇蒂、生抽、淀粉搅打上劲","heat":"无需火候","durationSeconds":300,"tip":"顺一个方向搅打出胶，馅才不散"},{"title":"酿香菇","description":"将肉馅填在香菇帽里，抹平表面","heat":"无需火候","durationSeconds":240,"tip":"馅别太厚，否则不易蒸透"},{"title":"蒸制","description":"水开后大火蒸12分钟","heat":"大火","durationSeconds":720,"tip":"蒸出的汤汁别倒，留着做芡"},{"title":"勾芡","description":"原汤加淀粉水勾薄芡浇在香菇上","heat":"中火","durationSeconds":90,"tip":"芡薄亮泽，卖相更好"}]',
+ 0),
+(73, '溜肉段', '外酥里嫩，东北名菜', '/images/73.jpg',
+ 4.6, 30, 420, '中等', '家常热菜', '下饭,东北', 74,
+ '[{"name":"猪里脊","amount":"350g","iconName":"beef"},{"name":"青椒","amount":"1个","iconName":"leaf"},{"name":"胡萝卜","amount":"半根","iconName":"leaf"},{"name":"淀粉","amount":"3勺","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"切段腌制","description":"里脊切小段，加盐、料酒和生抽腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"切得大小一致，炸时才同步熟"},{"title":"挂糊","description":"加淀粉和水调成厚糊，抓匀裹住肉段","heat":"无需火候","durationSeconds":120,"tip":"糊要稠一点，才炸得出硬壳"},{"title":"初炸","description":"油温六成热下肉段炸至定型捞出","heat":"中火","durationSeconds":240,"tip":"分批下锅，避免粘连"},{"title":"复炸","description":"油温升高后回锅复炸30秒至酥脆","heat":"大火","durationSeconds":30,"tip":"复炸是外酥里嫩的关键"},{"title":"溜汁","description":"锅留底油爆香蒜片，下青椒胡萝卜和调味汁，倒入肉段快速翻裹","heat":"大火","durationSeconds":90,"tip":"动作要快，才能保持酥脆"}]',
+ 0),
+(74, '三杯鸡', '一杯酒一杯酱一杯油，香浓下饭', '/images/74.jpg',
+ 4.8, 35, 420, '中等', '家常热菜', '下饭,香浓', 76,
+ '[{"name":"鸡腿","amount":"500g","iconName":"beef"},{"name":"九层塔","amount":"1把","iconName":"leaf"},{"name":"姜片","amount":"6片","iconName":"leaf"},{"name":"蒜瓣","amount":"8瓣","iconName":"garlic"},{"name":"米酒","amount":"1杯","iconName":"flask"},{"name":"生抽","amount":"1杯","iconName":"flask"}]',
+ '[{"title":"切块","description":"鸡腿剁成小块，洗净沥干","heat":"无需火候","durationSeconds":300,"tip":"带骨鸡腿肉比鸡胸香，久焖不柴"},{"title":"煸姜蒜","description":"冷锅下油，小火把姜片煸至微焦，再下蒜瓣爆香","heat":"小火","durationSeconds":180,"tip":"姜片煸到边缘卷曲，香气才足"},{"title":"炒鸡","description":"下鸡块中火翻炒至表面微黄","heat":"中火","durationSeconds":240,"tip":"炒出鸡油，成品更香"},{"title":"下三杯","description":"倒入米酒、生抽和麻油各一杯，大火烧开转小火焖15分钟","heat":"小火","durationSeconds":900,"tip":"全程不加一滴水，只用米酒和酱油"},{"title":"收汁下九层塔","description":"大火收汁，最后放入九层塔盖盖焖10秒出锅","heat":"大火","durationSeconds":120,"tip":"九层塔最后放，香气才不散"}]',
+ 1),
+(75, '孜然羊肉', '孜然浓香，越嚼越香', '/images/75.jpg',
+ 4.7, 20, 330, '中等', '家常热菜', '下饭,香辣', 78,
+ '[{"name":"羊腿肉","amount":"350g","iconName":"beef"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"孜然粒","amount":"1勺","iconName":"flask"},{"name":"辣椒面","amount":"1勺","iconName":"flask"},{"name":"香菜","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"切肉","description":"羊肉逆纹切薄片，用清水浸泡10分钟去血水","heat":"无需火候","durationSeconds":600,"tip":"泡去血水能明显减轻膻味"},{"title":"腌制","description":"羊肉加料酒、生抽、淀粉和少许油抓匀腌15分钟","heat":"无需火候","durationSeconds":900,"tip":"封油锁水，炒出来更嫩"},{"title":"煸炒","description":"热锅下油，羊肉大火快炒至变色","heat":"大火","durationSeconds":90,"tip":"全程大火，羊肉才嫩不腥"},{"title":"下配料","description":"加洋葱丝和孜然粒翻炒出香","heat":"大火","durationSeconds":60,"tip":"孜然粒比粉更香，需炒出味"},{"title":"调味","description":"撒辣椒面和盐炒匀，撒香菜出锅","heat":"大火","durationSeconds":45,"tip":"辣椒面最后放，避免炒糊发苦"}]',
+ 0),
+(76, '大盘鸡', '汤汁浓郁，配面一绝', '/images/76.jpg',
+ 4.7, 50, 520, '中等', '家常热菜', '饱腹,聚会', 74,
+ '[{"name":"鸡块","amount":"800g","iconName":"beef"},{"name":"土豆","amount":"2个","iconName":"leaf"},{"name":"青红椒","amount":"各1个","iconName":"leaf"},{"name":"干辣椒","amount":"8个","iconName":"flask"},{"name":"皮带面","amount":"200g","iconName":"leaf"},{"name":"豆瓣酱","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"焯鸡块","description":"鸡块冷水下锅焯水，撇沫后捞出洗净","heat":"大火","durationSeconds":300,"tip":"焯水去腥，汤色才清亮"},{"title":"炒糖色","description":"热油下糖小火炒至枣红，倒入鸡块翻炒上色","heat":"小火","durationSeconds":180,"tip":"糖色炒过头会苦，变枣红即下鸡块"},{"title":"炒底料","description":"加豆瓣酱、干辣椒、姜蒜炒出红油","heat":"中火","durationSeconds":120,"tip":"炒出红油是香味的关键"},{"title":"炖煮","description":"加开水没过，大火烧开转中火炖20分钟","heat":"中火","durationSeconds":1200,"tip":"加开水，冷水会让鸡肉变硬"},{"title":"下土豆收汁","description":"下土豆块炖10分钟，再下青红椒收浓汤汁","heat":"中火","durationSeconds":600,"tip":"土豆炖到能扎透但仍成形最好"},{"title":"配面","description":"煮好皮带面垫底，浇上鸡块和汤汁","heat":"大火","durationSeconds":180,"tip":"面条吸足汤汁才是大盘鸡的灵魂"}]',
+ 1),
+(77, '姜汁菠菜', '清爽去腻，姜香开胃', '/images/77.jpg',
+ 4.4, 12, 90, '简单', '凉菜', '素食,养生', 86,
+ '[{"name":"菠菜","amount":"400g","iconName":"leaf"},{"name":"姜末","amount":"2勺","iconName":"leaf"},{"name":"香醋","amount":"2勺","iconName":"flask"},{"name":"生抽","amount":"1勺","iconName":"flask"},{"name":"香油","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"洗净","description":"菠菜择洗干净，去老根","heat":"无需火候","durationSeconds":180,"tip":"根部泥沙多，多冲洗两遍"},{"title":"焯水","description":"水烧开加少许盐和油，下菠菜焯30秒捞出","heat":"大火","durationSeconds":30,"tip":"加盐油焯水，菠菜更翠绿"},{"title":"过凉挤水","description":"立刻过凉水，挤干水分切段","heat":"无需火候","durationSeconds":180,"tip":"挤干水分，拌出来才不会水汪汪"},{"title":"调姜汁","description":"姜末加香醋、生抽、香油和少许糖调匀","heat":"无需火候","durationSeconds":90,"tip":"姜末现磨更香，量可按口味增减"},{"title":"拌匀","description":"菠菜淋姜汁拌匀装盘","heat":"无需火候","durationSeconds":45,"tip":"现拌现吃，口感最清爽"}]',
+ 0),
+(78, '凉拌海带丝', '爽脆低脂，酸辣开胃', '/images/78.jpg',
+ 4.4, 15, 100, '简单', '凉菜', '素食,低脂', 84,
+ '[{"name":"海带丝","amount":"300g","iconName":"leaf"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"小米椒","amount":"3个","iconName":"flask"},{"name":"香醋","amount":"3勺","iconName":"flask"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"泡洗","description":"海带丝用清水反复冲洗，去掉多余盐分","heat":"无需火候","durationSeconds":600,"tip":"多洗几遍，成品才不会过咸"},{"title":"焯水","description":"水开下海带丝焯3分钟捞出过凉","heat":"大火","durationSeconds":180,"tip":"焯透后口感更爽脆"},{"title":"控水","description":"沥干水分，切成适口长度","heat":"无需火候","durationSeconds":120,"tip":"控干水分，拌料才不稀释"},{"title":"调汁","description":"蒜末、小米椒、香醋、生抽、香油和少许糖调匀","heat":"无需火候","durationSeconds":120,"tip":"酸辣中带一点甜，层次更好"},{"title":"拌匀","description":"海带丝淋汁拌匀，冷藏10分钟更爽口","heat":"无需火候","durationSeconds":60,"tip":"冷藏入味，风味更佳"}]',
+ 0),
+(79, '蒜蓉粉丝蒸扇贝', '鲜甜多汁，宴客首选', '/images/79.jpg',
+ 4.8, 25, 220, '中等', '海鲜', '宴客,鲜香', 76,
+ '[{"name":"扇贝","amount":"8只","iconName":"fish"},{"name":"龙口粉丝","amount":"1把","iconName":"leaf"},{"name":"蒜末","amount":"8瓣","iconName":"garlic"},{"name":"蒸鱼豉油","amount":"2勺","iconName":"flask"},{"name":"小米椒","amount":"2个","iconName":"flask"}]',
+ '[{"title":"洗扇贝","description":"扇贝开壳取肉，去内脏洗净，贝壳刷净","heat":"无需火候","durationSeconds":600,"tip":"内脏和黑膜要去干净，口感才清爽"},{"title":"泡粉丝","description":"粉丝温水泡软，剪短","heat":"无需火候","durationSeconds":600,"tip":"泡软不泡烂，蒸后才有弹性"},{"title":"炒蒜蓉","description":"一半蒜末炸香、一半生蒜，混合后加蒸鱼豉油调匀","heat":"小火","durationSeconds":120,"tip":"生熟蒜各半，蒜香层次最丰富"},{"title":"摆盘","description":"贝壳垫粉丝，放上扇贝肉，浇蒜蓉","heat":"无需火候","durationSeconds":180,"tip":"粉丝垫底能吸满鲜汁"},{"title":"蒸制","description":"水开后大火蒸6分钟，撒葱花淋热油","heat":"大火","durationSeconds":360,"tip":"蒸久肉会缩，6分钟刚好弹嫩"}]',
+ 1),
+(80, '椒盐虾', '外壳酥脆，咸香下饭', '/images/80.jpg',
+ 4.7, 20, 260, '简单', '海鲜', '香酥,下饭', 78,
+ '[{"name":"基围虾","amount":"500g","iconName":"fish"},{"name":"椒盐","amount":"1勺","iconName":"flask"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"青红椒","amount":"各半个","iconName":"leaf"},{"name":"淀粉","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"处理虾","description":"虾剪须去虾线，用刀在背部划开","heat":"无需火候","durationSeconds":480,"tip":"开背更易入味，也方便去虾线"},{"title":"拍粉","description":"虾沥干后拍上一层薄淀粉","heat":"无需火候","durationSeconds":120,"tip":"淀粉薄薄一层，炸出来才酥"},{"title":"炸虾","description":"油温七成热下虾炸1分钟至外壳酥脆捞出","heat":"大火","durationSeconds":90,"tip":"油温要足，虾壳才酥"},{"title":"炒配料","description":"锅留底油，下蒜末和青红椒碎炒香","heat":"中火","durationSeconds":60,"tip":"配料切碎一些，更易裹在虾上"},{"title":"翻炒","description":"倒回虾，撒椒盐快速翻匀出锅","heat":"大火","durationSeconds":45,"tip":"椒盐最后撒，避免炒糊"}]',
+ 0),
+(81, '港式蛋挞', '酥皮层层，蛋香浓郁', '/images/81.jpg',
+ 4.8, 45, 260, '中等', '烘焙', '甜品,下午茶', 74,
+ '[{"name":"蛋挞皮","amount":"12个","iconName":"leaf"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"牛奶","amount":"150ml","iconName":"flask"},{"name":"淡奶油","amount":"100ml","iconName":"flask"},{"name":"细砂糖","amount":"40g","iconName":"flask"}]',
+ '[{"title":"解冻挞皮","description":"冷冻挞皮室温回软10分钟","heat":"无需火候","durationSeconds":600,"tip":"回软后烘烤不易塌陷"},{"title":"调蛋液","description":"鸡蛋加糖打散，加牛奶和淡奶油搅匀","heat":"无需火候","durationSeconds":180,"tip":"搅匀即可，别打发以免起泡"},{"title":"过筛","description":"蛋液过筛两遍，静置5分钟消泡","heat":"无需火候","durationSeconds":300,"tip":"过筛是挞面光滑的关键"},{"title":"倒入挞皮","description":"蛋液倒入挞皮至八分满","heat":"无需火候","durationSeconds":120,"tip":"倒八分满，烤时会膨胀"},{"title":"烘烤","description":"烤箱200度烤18分钟至表面出现焦斑","heat":"无需火候","durationSeconds":1080,"tip":"最后2分钟转上火，烤出焦糖斑"}]',
+ 0),
+(82, '双皮奶', '滑嫩香甜，港式经典甜品', '/images/82.jpg',
+ 4.7, 30, 200, '中等', '甜品', '甜品,港式', 76,
+ '[{"name":"全脂牛奶","amount":"500ml","iconName":"flask"},{"name":"蛋清","amount":"3个","iconName":"egg"},{"name":"细砂糖","amount":"40g","iconName":"flask"}]',
+ '[{"title":"煮奶","description":"牛奶小火加热至微沸，倒入碗中静置结皮","heat":"小火","durationSeconds":300,"tip":"一定要全脂奶，奶皮才厚"},{"title":"留皮倒奶","description":"沿碗边划口，把牛奶倒出，奶皮留在碗底","heat":"无需火候","durationSeconds":120,"tip":"动作慢一点，奶皮才不破"},{"title":"调蛋奶","description":"蛋清加糖打散，与牛奶混合后过筛","heat":"无需火候","durationSeconds":180,"tip":"别打出泡，过筛去泡沫"},{"title":"回碗","description":"蛋奶液沿碗边缓缓倒回，奶皮自然浮起","heat":"无需火候","durationSeconds":90,"tip":"沿边倒，奶皮才会浮在上面"},{"title":"蒸制","description":"盖保鲜膜中小火蒸12分钟，关火焖5分钟","heat":"中小火","durationSeconds":720,"tip":"火大起蜂窝，中小火才滑嫩"}]',
+ 0),
+(83, '排骨莲藕汤', '清甜粉糯，秋日滋补', '/images/83.jpg',
+ 4.6, 90, 210, '简单', '汤煲', '养生,清淡', 86,
+ '[{"name":"排骨","amount":"400g","iconName":"beef"},{"name":"莲藕","amount":"500g","iconName":"leaf"},{"name":"姜片","amount":"3片","iconName":"leaf"},{"name":"枸杞","amount":"10g","iconName":"leaf"},{"name":"盐","amount":"适量","iconName":"flask"}]',
+ '[{"title":"焯水","description":"排骨冷水下锅焯水，撇沫后温水冲净","heat":"大火","durationSeconds":300,"tip":"冷水下锅血沫才逼得干净"},{"title":"切藕","description":"莲藕去皮切滚刀块，泡水防氧化","heat":"无需火候","durationSeconds":300,"tip":"选粉藕（表皮偏黄）炖出来才粉糯"},{"title":"炖汤","description":"排骨加姜片和足量清水，大火烧开转小火炖40分钟","heat":"小火","durationSeconds":2400,"tip":"水一次加够，中途加水会冲淡汤味"},{"title":"加藕","description":"下莲藕继续炖30分钟至粉糯","heat":"小火","durationSeconds":1800,"tip":"藕后放，久炖会化汤"},{"title":"调味","description":"出锅前加枸杞和盐调味","heat":"小火","durationSeconds":300,"tip":"盐最后放，排骨才不会柴"}]',
+ 0),
+(84, '罗宋汤', '酸甜浓郁，暖胃西式汤', '/images/84.jpg',
+ 4.6, 70, 240, '中等', '汤煲', '酸甜,西式', 78,
+ '[{"name":"牛腩","amount":"300g","iconName":"beef"},{"name":"番茄","amount":"3个","iconName":"tomato"},{"name":"土豆","amount":"1个","iconName":"leaf"},{"name":"胡萝卜","amount":"1根","iconName":"leaf"},{"name":"洋葱","amount":"1个","iconName":"onion"},{"name":"番茄酱","amount":"3勺","iconName":"flask"}]',
+ '[{"title":"焯牛肉","description":"牛腩切块冷水焯水，洗净备用","heat":"大火","durationSeconds":300,"tip":"焯水去腥，汤才清"},{"title":"炒蔬菜","description":"黄油下锅，炒香洋葱，加番茄丁炒出沙","heat":"中火","durationSeconds":300,"tip":"番茄炒出沙，汤色才红亮"},{"title":"炒番茄酱","description":"加番茄酱继续翻炒1分钟","heat":"中火","durationSeconds":60,"tip":"番茄酱炒过才不涩，颜色也更红"},{"title":"炖煮","description":"下牛肉和开水，小火炖40分钟","heat":"小火","durationSeconds":2400,"tip":"小火慢炖，牛肉才软烂"},{"title":"加土豆","description":"下土豆和胡萝卜炖20分钟，调咸淡出锅","heat":"小火","durationSeconds":1200,"tip":"土豆要炖到软糯吸味"}]',
+ 0),
+(85, '虫草花鸡汤', '汤鲜味浓，温补养生', '/images/85.jpg',
+ 4.7, 90, 190, '简单', '汤煲', '养生,滋补', 82,
+ '[{"name":"土鸡","amount":"半只","iconName":"beef"},{"name":"虫草花","amount":"30g","iconName":"leaf"},{"name":"红枣","amount":"6颗","iconName":"leaf"},{"name":"枸杞","amount":"10g","iconName":"leaf"},{"name":"姜片","amount":"3片","iconName":"leaf"}]',
+ '[{"title":"焯鸡","description":"鸡块冷水下锅焯水，撇沫后洗净","heat":"大火","durationSeconds":300,"tip":"散养土鸡腥味轻，焯水时间别太长"},{"title":"泡虫草花","description":"虫草花用清水冲洗，温水泡10分钟","heat":"无需火候","durationSeconds":600,"tip":"泡的水别倒，一起炖更鲜"},{"title":"炖汤","description":"鸡块加姜片和开水，大火烧开转小火炖60分钟","heat":"小火","durationSeconds":3600,"tip":"全程小火，汤色才金黄清亮"},{"title":"下配料","description":"加虫草花和红枣炖20分钟","heat":"小火","durationSeconds":1200,"tip":"红枣后放，久炖会发酸"},{"title":"调味","description":"出锅前5分钟加枸杞和盐","heat":"小火","durationSeconds":300,"tip":"枸杞久煮发酸，最后放"}]',
+ 0),
+(86, '老鸭汤', '清润去火，四季皆宜', '/images/86.jpg',
+ 4.6, 120, 220, '中等', '汤煲', '养生,滋补', 78,
+ '[{"name":"老鸭","amount":"半只","iconName":"beef"},{"name":"酸萝卜","amount":"200g","iconName":"leaf"},{"name":"姜片","amount":"4片","iconName":"leaf"},{"name":"白胡椒","amount":"1勺","iconName":"flask"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"处理鸭","description":"鸭子斩块，冷水下锅焯水后洗净","heat":"大火","durationSeconds":420,"tip":"鸭屁股和尾部油脂要去掉，否则腥"},{"title":"煸鸭","description":"锅不放油，鸭块中火煸炒至出油微黄","heat":"中火","durationSeconds":300,"tip":"煸出鸭油，汤才不腻"},{"title":"炖汤","description":"加姜片、白胡椒和开水，大火烧开转小火炖80分钟","heat":"小火","durationSeconds":4800,"tip":"水一次加足，小火慢煨"},{"title":"下酸萝卜","description":"加酸萝卜继续炖30分钟","heat":"小火","durationSeconds":1800,"tip":"酸萝卜提鲜解腻，是灵魂配料"},{"title":"调味","description":"加盐调味，撒葱花出锅","heat":"小火","durationSeconds":120,"tip":"酸萝卜有咸味，盐要少放"}]',
+ 0),
+(87, '酸辣汤', '酸辣开胃，浓稠顺滑', '/images/87.jpg',
+ 4.6, 25, 180, '中等', '汤煲', '酸辣,开胃', 82,
+ '[{"name":"豆腐","amount":"150g","iconName":"leaf"},{"name":"木耳","amount":"30g","iconName":"leaf"},{"name":"鸡蛋","amount":"1个","iconName":"egg"},{"name":"香醋","amount":"3勺","iconName":"flask"},{"name":"白胡椒粉","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"切丝","description":"豆腐、木耳、胡萝卜均切细丝","heat":"无需火候","durationSeconds":300,"tip":"切得越细，口感越顺滑"},{"title":"煮汤","description":"高汤烧开，下所有丝料煮3分钟","heat":"大火","durationSeconds":180,"tip":"汤底用高汤，味道才厚"},{"title":"勾芡","description":"淀粉水分次淋入，边倒边搅至浓稠","heat":"中火","durationSeconds":90,"tip":"分两次勾芡，避免一次结块"},{"title":"淋蛋花","description":"保持微沸，蛋液沿筷子缓缓淋入成蛋花","heat":"小火","durationSeconds":60,"tip":"汤不能大滚，蛋花才成絮状"},{"title":"调酸辣","description":"关火后加香醋和白胡椒粉调匀","heat":"无需火候","durationSeconds":45,"tip":"醋一定关火后加，酸味才突出"}]',
+ 0),
+(88, '冬瓜丸子汤', '清淡鲜美，消暑解腻', '/images/88.jpg',
+ 4.5, 25, 150, '简单', '汤煲', '清淡,快手', 84,
+ '[{"name":"冬瓜","amount":"400g","iconName":"leaf"},{"name":"猪肉末","amount":"200g","iconName":"beef"},{"name":"蛋清","amount":"1个","iconName":"egg"},{"name":"姜末","amount":"适量","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"调馅","description":"肉末加蛋清、姜末、盐和淀粉，顺一个方向搅打上劲","heat":"无需火候","durationSeconds":300,"tip":"搅打上劲，丸子才不散"},{"title":"切冬瓜","description":"冬瓜去皮去瓤，切薄片","heat":"无需火候","durationSeconds":180,"tip":"切薄片易熟，也更入味"},{"title":"汆丸子","description":"水微开时用勺子把肉馅团成丸子下锅","heat":"小火","durationSeconds":300,"tip":"水面似开非开，丸子才不散"},{"title":"下冬瓜","description":"丸子浮起后下冬瓜片煮5分钟","heat":"中火","durationSeconds":300,"tip":"冬瓜煮至透明即熟"},{"title":"调味","description":"加盐和白胡椒调味，撒葱花出锅","heat":"中火","durationSeconds":60,"tip":"白胡椒提鲜去腥"}]',
+ 0),
+(89, '扬州炒饭', '粒粒分明，配料丰富', '/images/89.jpg',
+ 4.7, 20, 460, '中等', '主食', '饱腹,经典', 82,
+ '[{"name":"隔夜米饭","amount":"400g","iconName":"leaf"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"虾仁","amount":"80g","iconName":"fish"},{"name":"火腿","amount":"60g","iconName":"beef"},{"name":"青豆玉米","amount":"80g","iconName":"leaf"},{"name":"胡萝卜","amount":"半根","iconName":"leaf"}]',
+ '[{"title":"备料","description":"火腿、胡萝卜切丁，虾仁去虾线，青豆玉米焯水","heat":"无需火候","durationSeconds":300,"tip":"配料切得大小一致，口感才好"},{"title":"炒蛋","description":"热油下蛋液，炒散成小块盛出","heat":"中火","durationSeconds":60,"tip":"蛋炒碎一点，拌饭更均匀"},{"title":"炒配料","description":"下火腿、虾仁、青豆玉米和胡萝卜丁炒香","heat":"中火","durationSeconds":180,"tip":"虾仁变色即可，别炒老"},{"title":"炒饭","description":"下米饭大火炒散，用铲背压散结块","heat":"大火","durationSeconds":240,"tip":"用隔夜饭才粒粒分明"},{"title":"合炒调味","description":"倒回鸡蛋，加盐和少许生抽炒匀出锅","heat":"大火","durationSeconds":90,"tip":"全程大火，才有锅气"}]',
+ 0),
+(90, '葱油拌面', '葱香浓郁，简单高级', '/images/90.jpg',
+ 4.6, 15, 380, '简单', '主食', '快手,家常', 88,
+ '[{"name":"细面条","amount":"200g","iconName":"leaf"},{"name":"小葱","amount":"8根","iconName":"leaf"},{"name":"生抽","amount":"3勺","iconName":"flask"},{"name":"老抽","amount":"半勺","iconName":"flask"},{"name":"白糖","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切葱","description":"小葱洗净沥干，葱白葱绿分开切段","heat":"无需火候","durationSeconds":180,"tip":"葱要沥干，下油锅才不溅"},{"title":"熬葱油","description":"冷油下葱白小火熬至微黄，再下葱绿熬至焦黄","heat":"小火","durationSeconds":480,"tip":"全程小火慢熬，葱香才浓郁"},{"title":"调酱汁","description":"捞出葱段，油中加生抽、老抽和糖小火熬匀","heat":"小火","durationSeconds":120,"tip":"糖要熬化，酱汁才亮"},{"title":"煮面","description":"面条煮熟捞出，过一遍凉开水","heat":"大火","durationSeconds":240,"tip":"过凉水去表面淀粉，拌时不粘"},{"title":"拌匀","description":"面条加葱油酱汁拌匀，撒酥葱","heat":"无需火候","durationSeconds":60,"tip":"酱汁分次加，边拌边尝"}]',
+ 0),
+(91, '西红柿鸡蛋面', '酸甜暖胃，家常至味', '/images/91.jpg',
+ 4.6, 15, 400, '简单', '主食', '快手,家常', 90,
+ '[{"name":"面条","amount":"200g","iconName":"leaf"},{"name":"番茄","amount":"2个","iconName":"tomato"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"小葱","amount":"2根","iconName":"leaf"},{"name":"生抽","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"备料","description":"番茄去皮切块，鸡蛋打散，葱切葱花","heat":"无需火候","durationSeconds":240,"tip":"番茄去皮口感更细腻"},{"title":"炒蛋","description":"热油下蛋液炒成大块盛出","heat":"中火","durationSeconds":60,"tip":"蛋炒嫩一点，回锅还要再煮"},{"title":"炒番茄","description":"下番茄块中火炒出汁，加生抽和少许盐","heat":"中火","durationSeconds":180,"tip":"番茄炒出沙，汤才红亮"},{"title":"煮汤","description":"加开水烧开，下面条煮至软熟","heat":"大火","durationSeconds":300,"tip":"水开下面，面条才不粘"},{"title":"合锅","description":"倒回鸡蛋，调咸淡，撒葱花出锅","heat":"中火","durationSeconds":90,"tip":"鸡蛋最后放，保持嫩滑"}]',
+ 0),
+(92, '老北京炸酱面', '酱香浓郁，面菜齐备', '/images/92.jpg',
+ 4.7, 40, 520, '中等', '主食', '饱腹,经典', 78,
+ '[{"name":"手擀面","amount":"300g","iconName":"leaf"},{"name":"五花肉","amount":"200g","iconName":"beef"},{"name":"干黄酱","amount":"3勺","iconName":"flask"},{"name":"甜面酱","amount":"1勺","iconName":"flask"},{"name":"黄瓜","amount":"1根","iconName":"leaf"},{"name":"豆芽","amount":"100g","iconName":"leaf"}]',
+ '[{"title":"澥酱","description":"干黄酱和甜面酱用少量水澥开","heat":"无需火候","durationSeconds":120,"tip":"酱要澥开，炒时不易糊锅"},{"title":"炒肉丁","description":"五花肉切小丁，煸炒出油","heat":"中火","durationSeconds":240,"tip":"肉丁煸到微焦，酱才更香"},{"title":"熬酱","description":"下酱料小火慢熬15分钟，不断搅动","heat":"小火","durationSeconds":900,"tip":"小火慢熬，酱香才浓且不苦"},{"title":"备菜码","description":"黄瓜切丝，豆芽焯水，其他菜码按喜好准备","heat":"大火","durationSeconds":120,"tip":"菜码要新鲜爽脆，解酱腻"},{"title":"拌面","description":"面条煮熟过凉，浇炸酱配菜码拌匀","heat":"大火","durationSeconds":240,"tip":"面过凉水更筋道"}]',
+ 0),
+(93, '炒河粉', '镬气十足，软滑入味', '/images/93.jpg',
+ 4.6, 20, 420, '中等', '主食', '快手,镬气', 76,
+ '[{"name":"河粉","amount":"300g","iconName":"leaf"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"豆芽","amount":"100g","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"老抽","amount":"半勺","iconName":"flask"}]',
+ '[{"title":"备料","description":"河粉轻轻抖散，豆芽洗净，葱切段","heat":"无需火候","durationSeconds":180,"tip":"河粉别用水泡，否则易断"},{"title":"炒蛋","description":"热锅下油，鸡蛋炒散盛出","heat":"中火","durationSeconds":60,"tip":"鸡蛋炒至半熟，回锅才嫩"},{"title":"炒豆芽","description":"下豆芽大火快炒30秒","heat":"大火","durationSeconds":30,"tip":"豆芽断生即可，保持脆爽"},{"title":"炒河粉","description":"下河粉，用筷子抖散，加生抽老抽上色","heat":"大火","durationSeconds":120,"tip":"筷子比铲子更不易把河粉弄断"},{"title":"合炒","description":"倒回鸡蛋和葱段，大火翻炒均匀出锅","heat":"大火","durationSeconds":60,"tip":"动作要快，河粉才不粘不碎"}]',
+ 0),
+(94, '新疆手抓饭', '油亮喷香，肉菜饭一锅出', '/images/94.jpg',
+ 4.7, 60, 560, '中等', '主食', '饱腹,特色', 74,
+ '[{"name":"羊排","amount":"400g","iconName":"beef"},{"name":"大米","amount":"300g","iconName":"leaf"},{"name":"胡萝卜","amount":"2根","iconName":"leaf"},{"name":"洋葱","amount":"1个","iconName":"onion"},{"name":"葡萄干","amount":"30g","iconName":"leaf"}]',
+ '[{"title":"泡米","description":"大米淘洗后浸泡30分钟","heat":"无需火候","durationSeconds":1800,"tip":"泡过的米更易焖透"},{"title":"煸羊排","description":"热油下羊排煎至两面金黄","heat":"中火","durationSeconds":360,"tip":"羊排煎出油脂，饭才香"},{"title":"炒配菜","description":"下洋葱炒软，加胡萝卜条翻炒","heat":"中火","durationSeconds":240,"tip":"胡萝卜要炒到变软出甜味"},{"title":"加水焖米","description":"加开水没过食材，铺上大米，中小火焖25分钟","heat":"中小火","durationSeconds":1500,"tip":"水面略高于米，别搅动"},{"title":"撒葡萄干","description":"焖好后撒葡萄干，翻拌均匀","heat":"无需火候","durationSeconds":90,"tip":"葡萄干最后放，保持甜软"}]',
+ 0),
+(95, '咖喱鸡饭', '浓郁香滑，一锅一饭', '/images/95.jpg',
+ 4.7, 40, 520, '简单', '主食', '饱腹,浓郁', 80,
+ '[{"name":"鸡腿肉","amount":"400g","iconName":"beef"},{"name":"土豆","amount":"2个","iconName":"leaf"},{"name":"胡萝卜","amount":"1根","iconName":"leaf"},{"name":"咖喱块","amount":"3块","iconName":"flask"},{"name":"洋葱","amount":"1个","iconName":"onion"}]',
+ '[{"title":"切块","description":"鸡腿肉、土豆、胡萝卜切滚刀块，洋葱切丁","heat":"无需火候","durationSeconds":300,"tip":"大小一致，受热才均匀"},{"title":"炒鸡","description":"热油下鸡肉煸炒至变色","heat":"中火","durationSeconds":180,"tip":"先炒鸡块，锁住肉汁"},{"title":"炒蔬菜","description":"下洋葱炒软，加土豆胡萝卜翻炒","heat":"中火","durationSeconds":180,"tip":"洋葱炒软后甜味才出来"},{"title":"炖煮","description":"加水没过食材，大火烧开转小火炖20分钟","heat":"小火","durationSeconds":1200,"tip":"炖到土豆能被筷子扎透"},{"title":"加咖喱","description":"关火后放入咖喱块搅至融化，小火再煮5分钟","heat":"小火","durationSeconds":300,"tip":"咖喱块一定要关火后再放，否则结块"},{"title":"浇饭","description":"米饭装盘，浇上咖喱鸡即可","heat":"无需火候","durationSeconds":60,"tip":"汤汁略稠更挂饭"}]',
+ 0),
+(96, '番茄肉酱意面', '酸甜浓郁，意式经典', '/images/96.jpg',
+ 4.7, 35, 480, '中等', '西餐', '饱腹,经典', 80,
+ '[{"name":"意面","amount":"200g","iconName":"leaf"},{"name":"牛肉末","amount":"250g","iconName":"beef"},{"name":"番茄","amount":"3个","iconName":"tomato"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"番茄酱","amount":"3勺","iconName":"flask"},{"name":"蒜末","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"煮面","description":"水开加盐，下意面煮8分钟至微硬有芯","heat":"大火","durationSeconds":480,"tip":"留一碗煮面水，后面调稠用"},{"title":"炒香","description":"橄榄油下蒜末和洋葱碎炒软","heat":"中火","durationSeconds":180,"tip":"洋葱炒到透明，甜味才出来"},{"title":"炒肉末","description":"下牛肉末炒散至变色","heat":"中火","durationSeconds":240,"tip":"肉末炒到微微焦香最好"},{"title":"熬酱","description":"加番茄丁和番茄酱，小火熬15分钟","heat":"小火","durationSeconds":900,"tip":"小火慢熬，酱汁才浓稠挂面"},{"title":"拌面","description":"意面入酱锅，加煮面水快速拌匀","heat":"中火","durationSeconds":90,"tip":"加煮面水是酱汁乳化挂面的关键"}]',
+ 0),
+(97, '黑椒牛排', '外焦里嫩，锁住肉汁', '/images/97.jpg',
+ 4.8, 20, 400, '中等', '西餐', '高蛋白,宴客', 74,
+ '[{"name":"西冷牛排","amount":"1块","iconName":"beef"},{"name":"黄油","amount":"15g","iconName":"flask"},{"name":"黑胡椒碎","amount":"1勺","iconName":"flask"},{"name":"迷迭香","amount":"1枝","iconName":"leaf"},{"name":"大蒜","amount":"3瓣","iconName":"garlic"}]',
+ '[{"title":"回温","description":"牛排从冰箱取出回温30分钟，用厨房纸吸干水分","heat":"无需火候","durationSeconds":1800,"tip":"回温后煎受热才均匀，不流血水"},{"title":"煎第一面","description":"铸铁锅烧到冒烟，下牛排煎90秒不翻动","heat":"大火","durationSeconds":90,"tip":"锅一定要够热，才能煎出焦壳"},{"title":"煎第二面","description":"翻面再煎90秒，加黄油、蒜和迷迭香","heat":"大火","durationSeconds":90,"tip":"黄油最后加，否则易焦"},{"title":"淋油","description":"用勺子把黄油反复浇在牛排表面30秒","heat":"中火","durationSeconds":30,"tip":"淋油能让表面更香更亮"},{"title":"静置切块","description":"出锅静置5分钟后逆纹切片，撒黑胡椒","heat":"无需火候","durationSeconds":300,"tip":"静置让肉汁回流，切开才不流失"}]',
+ 1),
+(98, '奶油蘑菇汤', '浓郁顺滑，暖胃浓汤', '/images/98.jpg',
+ 4.6, 30, 280, '简单', '西餐', '浓郁,暖胃', 78,
+ '[{"name":"口蘑","amount":"300g","iconName":"leaf"},{"name":"洋葱","amount":"半个","iconName":"onion"},{"name":"淡奶油","amount":"100ml","iconName":"flask"},{"name":"黄油","amount":"20g","iconName":"flask"},{"name":"面粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切片","description":"口蘑切片，洋葱切碎","heat":"无需火候","durationSeconds":240,"tip":"蘑菇切薄片更易炒出香味"},{"title":"炒蘑菇","description":"黄油下锅，炒香洋葱后下蘑菇炒至出水收干","heat":"中火","durationSeconds":300,"tip":"蘑菇要炒到出水再收干，风味才浓"},{"title":"炒面糊","description":"撒入面粉翻炒1分钟","heat":"小火","durationSeconds":60,"tip":"炒面糊是浓汤顺滑的关键"},{"title":"煮汤","description":"加高汤或清水，中小火煮10分钟","heat":"中小火","durationSeconds":600,"tip":"边煮边搅，避免糊底"},{"title":"打碎加奶油","description":"用料理棒打成细腻糊状，加奶油和盐调味","heat":"小火","durationSeconds":180,"tip":"打细腻后回锅小火加热，别煮沸"}]',
+ 0),
+(99, '凯撒沙拉', '清爽脆嫩，低脂健康', '/images/99.jpg',
+ 4.5, 15, 220, '简单', '轻食', '低脂,健康', 82,
+ '[{"name":"罗马生菜","amount":"1棵","iconName":"leaf"},{"name":"鸡胸肉","amount":"150g","iconName":"beef"},{"name":"面包丁","amount":"50g","iconName":"leaf"},{"name":"帕玛森芝士","amount":"20g","iconName":"flask"},{"name":"凯撒酱","amount":"3勺","iconName":"flask"}]',
+ '[{"title":"煎鸡胸","description":"鸡胸肉撒盐和黑胡椒，平底锅两面各煎4分钟","heat":"中火","durationSeconds":480,"tip":"煎好后静置再切，肉汁不流失"},{"title":"洗菜","description":"罗马生菜洗净沥干，手撕成适口大小","heat":"无需火候","durationSeconds":240,"tip":"手撕比刀切更不易氧化发黑"},{"title":"烤面包丁","description":"面包丁淋橄榄油，烤箱180度烤6分钟","heat":"无需火候","durationSeconds":360,"tip":"烤到金黄酥脆即可"},{"title":"切鸡胸","description":"鸡胸肉逆纹切片","heat":"无需火候","durationSeconds":120,"tip":"逆纹切口感更嫩"},{"title":"拌沙拉","description":"生菜、鸡胸、面包丁加凯撒酱拌匀，撒芝士碎","heat":"无需火候","durationSeconds":60,"tip":"上桌前再拌，避免生菜出水"}]',
+ 0),
+(100, '生煎包', '底脆顶软，汤汁四溢', '/images/100.jpg',
+ 4.7, 60, 380, '困难', '小吃', '早餐,经典', 72,
+ '[{"name":"面粉","amount":"300g","iconName":"leaf"},{"name":"猪肉末","amount":"300g","iconName":"beef"},{"name":"皮冻","amount":"100g","iconName":"flask"},{"name":"酵母","amount":"3g","iconName":"flask"},{"name":"白芝麻","amount":"10g","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"发面","description":"面粉加酵母和温水揉成光滑面团，发酵至两倍大","heat":"无需火候","durationSeconds":3600,"tip":"水温别超过40度，否则酵母失活"},{"title":"调馅","description":"肉末加调料和切碎的皮冻，顺一个方向搅打上劲","heat":"无需火候","durationSeconds":600,"tip":"皮冻是汤汁的来源，不可省"},{"title":"包包子","description":"面团分剂擀皮，包入馅料捏成褶","heat":"无需火候","durationSeconds":900,"tip":"收口要捏紧，煎时才不漏汤"},{"title":"煎制","description":"平底锅刷油，包子收口朝下摆入，中火煎2分钟","heat":"中火","durationSeconds":120,"tip":"先煎出脆底，再加水利于蓬松"},{"title":"加水焖","description":"沿锅边加水至包子三分之一高，加盖焖8分钟","heat":"中火","durationSeconds":480,"tip":"水收干后撒芝麻葱花再煎1分钟"}]',
+ 0),
+(101, '小笼包', '皮薄馅嫩，汤汁饱满', '/images/101.jpg',
+ 4.8, 70, 360, '困难', '小吃', '早餐,经典', 70,
+ '[{"name":"面粉","amount":"300g","iconName":"leaf"},{"name":"猪肉末","amount":"300g","iconName":"beef"},{"name":"皮冻","amount":"150g","iconName":"flask"},{"name":"姜末","amount":"适量","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"}]',
+ '[{"title":"和面","description":"面粉加温水和成偏软的面团，盖膜醒30分钟","heat":"无需火候","durationSeconds":1800,"tip":"面团要软，擀出的皮才薄而不破"},{"title":"调馅","description":"肉末加姜末、调料和皮冻碎搅打上劲","heat":"无需火候","durationSeconds":600,"tip":"皮冻切得越碎，汤汁越细腻"},{"title":"擀皮","description":"面团搓条下剂，擀成中间厚边缘薄的圆皮","heat":"无需火候","durationSeconds":900,"tip":"中间留厚，包时才不破底"},{"title":"包捏","description":"包入馅料，捏出16个以上的细褶","heat":"无需火候","durationSeconds":900,"tip":"褶子越多越均匀，卖相越好"},{"title":"蒸制","description":"垫笼布，水开后大火蒸8分钟","heat":"大火","durationSeconds":480,"tip":"蒸久皮会塌，8分钟即出"}]',
+ 0),
+(102, '锅贴', '底脆馅香，一口一个', '/images/102.jpg',
+ 4.6, 40, 340, '中等', '小吃', '早餐,家常', 78,
+ '[{"name":"饺子皮","amount":"30张","iconName":"leaf"},{"name":"猪肉末","amount":"250g","iconName":"beef"},{"name":"白菜","amount":"200g","iconName":"leaf"},{"name":"小葱","amount":"2根","iconName":"leaf"},{"name":"姜末","amount":"适量","iconName":"leaf"}]',
+ '[{"title":"调馅","description":"肉末加姜末、调料搅打上劲，拌入剁碎挤干的白菜","heat":"无需火候","durationSeconds":480,"tip":"白菜剁后要挤干水，馅才不出汤"},{"title":"包制","description":"饺子皮放馅，对折捏紧两端留口","heat":"无需火候","durationSeconds":600,"tip":"两端留口，煎时更易熟"},{"title":"摆锅","description":"平底锅刷油，锅贴排紧摆入，中火煎2分钟","heat":"中火","durationSeconds":120,"tip":"排紧一点，受热更均匀"},{"title":"加水焖","description":"加面粉水至锅贴三分之一高，加盖焖6分钟","heat":"中火","durationSeconds":360,"tip":"面粉水能煎出漂亮的脆底冰花"},{"title":"收干","description":"水收干后开盖再煎1分钟出锅","heat":"中火","durationSeconds":60,"tip":"最后开盖煎，底部才够脆"}]',
+ 0),
+(103, '葱油饼', '层层酥香，外脆内软', '/images/103.jpg',
+ 4.6, 40, 320, '中等', '小吃', '早餐,快手', 82,
+ '[{"name":"面粉","amount":"300g","iconName":"leaf"},{"name":"小葱","amount":"6根","iconName":"leaf"},{"name":"面粉","amount":"2勺","iconName":"flask"},{"name":"盐","amount":"适量","iconName":"flask"},{"name":"食用油","amount":"3勺","iconName":"flask"}]',
+ '[{"title":"和面","description":"面粉加温水和成偏软面团，盖膜醒30分钟","heat":"无需火候","durationSeconds":1800,"tip":"面团越软，饼越松软"},{"title":"做油酥","description":"热油浇在面粉和盐上拌成油酥","heat":"无需火候","durationSeconds":120,"tip":"油酥是起层的关键"},{"title":"擀卷","description":"面团擀开抹油酥撒葱花，卷起后盘成圆饼再擀开","heat":"无需火候","durationSeconds":600,"tip":"卷得越多层，层次越丰富"},{"title":"煎制","description":"平底锅少油，中小火煎至一面金黄","heat":"中小火","durationSeconds":180,"tip":"中火煎，火大外焦内生"},{"title":"翻面出锅","description":"翻面再煎至两面金黄，切块食用","heat":"中小火","durationSeconds":180,"tip":"出锅前用铲轻压，更酥脆"}]',
+ 0),
+(104, '糯米烧卖', '糯米油润，咸香饱腹', '/images/104.jpg',
+ 4.6, 50, 400, '中等', '小吃', '早餐,饱腹', 76,
+ '[{"name":"烧卖皮","amount":"20张","iconName":"leaf"},{"name":"糯米","amount":"200g","iconName":"leaf"},{"name":"猪肉末","amount":"100g","iconName":"beef"},{"name":"香菇","amount":"4朵","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"泡蒸糯米","description":"糯米浸泡4小时后上锅蒸20分钟","heat":"大火","durationSeconds":1200,"tip":"泡足时间，蒸出来才软糯"},{"title":"炒馅","description":"肉末炒散，加香菇丁和调料炒香","heat":"中火","durationSeconds":240,"tip":"香菇丁炒出香味再拌饭"},{"title":"拌饭","description":"蒸好的糯米拌入炒料，调匀咸淡","heat":"无需火候","durationSeconds":180,"tip":"糯米要趁热拌，才吸味"},{"title":"包制","description":"烧卖皮放糯米馅，虎口收拢捏出花边","heat":"无需火候","durationSeconds":600,"tip":"不用完全收口，露馅才好看"},{"title":"蒸制","description":"水开后大火蒸10分钟","heat":"大火","durationSeconds":600,"tip":"蒸到皮透明、馅热透即可"}]',
+ 0),
+(105, '鸡蛋灌饼', '外酥内嫩，早餐首选', '/images/105.jpg',
+ 4.5, 20, 380, '简单', '早餐', '早餐,快手', 84,
+ '[{"name":"面粉","amount":"200g","iconName":"leaf"},{"name":"鸡蛋","amount":"2个","iconName":"egg"},{"name":"生菜","amount":"2片","iconName":"leaf"},{"name":"甜面酱","amount":"1勺","iconName":"flask"},{"name":"食用油","amount":"2勺","iconName":"flask"}]',
+ '[{"title":"和面","description":"面粉加温水和成软面团，醒20分钟","heat":"无需火候","durationSeconds":1200,"tip":"面团软一点，饼才不硬"},{"title":"做油酥","description":"热油浇面粉拌成油酥","heat":"无需火候","durationSeconds":90,"tip":"抹油酥饼才能鼓起分层"},{"title":"擀饼","description":"面团擀开抹油酥，卷起再擀成圆饼","heat":"无需火候","durationSeconds":300,"tip":"收口捏紧，防止擀的时候漏酥"},{"title":"烙饼灌蛋","description":"平底锅烙至鼓起，划口倒入蛋液","heat":"中火","durationSeconds":180,"tip":"鼓起来说明分层了，正好灌蛋"},{"title":"刷酱卷菜","description":"两面烙熟后刷甜面酱，夹生菜卷起","heat":"中火","durationSeconds":90,"tip":"趁热卷，饼才柔软不脆裂"}]',
+ 0),
+(106, '豆腐脑', '嫩滑咸香，配卤汁一绝', '/images/106.jpg',
+ 4.6, 40, 150, '困难', '早餐', '早餐,养胃', 76,
+ '[{"name":"黄豆","amount":"150g","iconName":"leaf"},{"name":"内酯","amount":"3g","iconName":"flask"},{"name":"木耳","amount":"20g","iconName":"leaf"},{"name":"黄花菜","amount":"20g","iconName":"leaf"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"打豆浆","description":"黄豆泡8小时，加清水打成浆并过滤","heat":"无需火候","durationSeconds":28800,"tip":"泡足时间出浆率才高"},{"title":"煮浆","description":"豆浆煮沸后再煮3分钟，晾至85度","heat":"中火","durationSeconds":300,"tip":"必须彻底煮沸，否则有豆腥味"},{"title":"点卤","description":"内酯用温水化开，冲入豆浆静置15分钟凝固","heat":"无需火候","durationSeconds":900,"tip":"冲入后别搅动，静置才能凝成脑"},{"title":"做卤汁","description":"木耳黄花菜切碎煮开，加生抽和淀粉水勾芡","heat":"中火","durationSeconds":300,"tip":"卤汁略稠才挂得住豆腐脑"},{"title":"盛碗","description":"豆腐脑盛碗，浇上卤汁，加辣油和香菜","heat":"无需火候","durationSeconds":90,"tip":"用平勺一片片舀，保持完整"}]',
+ 0),
+(107, '燕麦牛奶粥', '香浓顺滑，健康早餐', '/images/107.jpg',
+ 4.5, 10, 220, '简单', '早餐', '早餐,健康', 90,
+ '[{"name":"即食燕麦","amount":"80g","iconName":"leaf"},{"name":"牛奶","amount":"300ml","iconName":"flask"},{"name":"香蕉","amount":"1根","iconName":"leaf"},{"name":"坚果","amount":"20g","iconName":"leaf"},{"name":"蜂蜜","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"煮燕麦","description":"牛奶小火加热，倒入燕麦煮3分钟","heat":"小火","durationSeconds":180,"tip":"小火慢煮，避免牛奶溢出"},{"title":"搅拌","description":"边煮边搅至燕麦变软、粥体浓稠","heat":"小火","durationSeconds":60,"tip":"搅拌防止糊底"},{"title":"加香蕉","description":"香蕉切片加入搅匀","heat":"小火","durationSeconds":30,"tip":"香蕉后放，保留果香"},{"title":"调味","description":"关火后加蜂蜜搅匀","heat":"无需火候","durationSeconds":30,"tip":"蜂蜜别用滚水冲，营养会流失"},{"title":"撒坚果","description":"盛碗后撒上坚果碎","heat":"无需火候","durationSeconds":20,"tip":"坚果最后撒，保持酥脆"}]',
+ 0),
+(108, '红烧茄子', '软糯入味，下饭神器', '/images/108.jpg',
+ 4.6, 20, 240, '简单', '素食', '素食,下饭', 84,
+ '[{"name":"长茄子","amount":"2根","iconName":"leaf"},{"name":"青椒","amount":"1个","iconName":"leaf"},{"name":"蒜末","amount":"4瓣","iconName":"garlic"},{"name":"生抽","amount":"2勺","iconName":"flask"},{"name":"蚝油","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切块","description":"茄子切滚刀块，撒少许盐腌10分钟挤水","heat":"无需火候","durationSeconds":600,"tip":"腌出水再拍粉，茄子少吸油"},{"title":"拍粉","description":"茄子拍上一层薄淀粉","heat":"无需火候","durationSeconds":120,"tip":"拍粉能锁住水分，减少吸油"},{"title":"煎茄子","description":"热锅多油，中火煎至表面微焦捞出","heat":"中火","durationSeconds":300,"tip":"煎比炸省油，口感也好"},{"title":"炒汁","description":"锅留底油爆香蒜末，加生抽、蚝油和少许水烧开","heat":"中火","durationSeconds":90,"tip":"加一点糖能提鲜"},{"title":"合烧","description":"倒回茄子烧2分钟收汁，下青椒块炒匀出锅","heat":"中火","durationSeconds":120,"tip":"轻推翻动，保持茄子完整"}]',
+ 0),
+(109, '干锅土豆片', '外焦里糯，香辣下饭', '/images/109.jpg',
+ 4.6, 20, 260, '简单', '素食', '素食,香辣', 82,
+ '[{"name":"土豆","amount":"3个","iconName":"leaf"},{"name":"五花肉","amount":"80g","iconName":"beef"},{"name":"干辣椒","amount":"6个","iconName":"flask"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"},{"name":"豆瓣酱","amount":"1勺","iconName":"flask"}]',
+ '[{"title":"切片","description":"土豆去皮切厚片，用清水冲洗去淀粉","heat":"无需火候","durationSeconds":300,"tip":"厚片外焦里糯，薄片易碎"},{"title":"煎土豆","description":"平底锅中火煎至两面金黄盛出","heat":"中火","durationSeconds":360,"tip":"煎到边缘微焦最好吃"},{"title":"煸肉","description":"下五花肉片煸出油","heat":"中火","durationSeconds":120,"tip":"用五花肉的油炒菜更香"},{"title":"炒底料","description":"加豆瓣酱、干辣椒和蒜片小火炒出红油","heat":"小火","durationSeconds":90,"tip":"小火炒香，避免糊底"},{"title":"合炒","description":"倒回土豆片，加生抽和少许糖大火翻炒出锅","heat":"大火","durationSeconds":90,"tip":"快炒收干水汽，味道更浓"}]',
+ 0),
+(110, '香菇青菜', '清淡爽口，荤素皆宜', '/images/110.jpg',
+ 4.5, 12, 110, '简单', '素食', '素食,清淡', 88,
+ '[{"name":"小青菜","amount":"400g","iconName":"leaf"},{"name":"香菇","amount":"6朵","iconName":"leaf"},{"name":"蒜片","amount":"3瓣","iconName":"garlic"},{"name":"蚝油","amount":"1勺","iconName":"flask"},{"name":"淀粉","amount":"半勺","iconName":"flask"}]',
+ '[{"title":"备菜","description":"小青菜掰开洗净，香菇切片","heat":"无需火候","durationSeconds":240,"tip":"菜叶和菜梗分开，先后下锅"},{"title":"焯水","description":"水开加盐油，下青菜焯30秒捞出过凉","heat":"大火","durationSeconds":30,"tip":"焯水加油盐，青菜才翠绿"},{"title":"炒香菇","description":"热油下蒜片和香菇片，炒至香菇变软出香","heat":"中火","durationSeconds":180,"tip":"香菇炒到微黄，鲜味才出来"},{"title":"合炒","description":"下青菜大火翻炒，加蚝油和盐调味","heat":"大火","durationSeconds":60,"tip":"青菜回锅只需炒匀调味"},{"title":"勾芡","description":"淋薄芡翻匀出锅","heat":"中火","durationSeconds":45,"tip":"薄芡让汤汁挂住青菜，卖相更好"}]',
+ 0);

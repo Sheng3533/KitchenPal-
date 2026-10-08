@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火候监控</title>
+    <style id="theme-vars">
+/* AI Kitchen Assistant - Warm Natural Style */
+:root {
+  /* Brand Primary - Warm Orange */
+  --color-primary: #E8743B;
+  --color-primary-light: #F09B6E;
+  --color-primary-lighter: #F5C49E;
+  --color-primary-lightest: #FBE8D6;
+  --color-primary-dark: #C45E2A;
+  --color-primary-darker: #9A4A20;
+
+  /* Brand Secondary - Warm Brown */
+  --color-secondary: #8B5E3C;
+  --color-secondary-light: #B07D55;
+  --color-secondary-lighter: #D4A87A;
+
+  /* Neutrals - Warm Toned */
+  --color-bg: #FEFAF5;
+  --color-bg-warm: #FFF8F0;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFCF8;
+  --color-surface-overlay: #F5EDE4;
+  --color-border: #E8DDD0;
+  --color-border-light: #F0E8DE;
+  --color-text-primary: #3D2B1F;
+  --color-text-secondary: #6B5744;
+  --color-text-tertiary: #9A8B7A;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+
+  /* State Colors */
+  --state-success: #4A9D5B;
+  --state-success-bg: #E8F5EA;
+  --state-warning: #E8A33D;
+  --state-warning-bg: #FFF4E0;
+  --state-error: #D94B4B;
+  --state-error-bg: #FDE8E8;
+  --state-info: #5B8EC9;
+  --state-info-bg: #E8F0FA;
+
+  /* Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - surface-first, subtle */
+  --shadow-sm: 0 1px 3px rgba(61, 43, 31, 0.04);
+  --shadow-md: 0 2px 8px rgba(61, 43, 31, 0.06);
+  --shadow-lg: 0 4px 16px rgba(61, 43, 31, 0.08);
+  --shadow-card: 0 1px 4px rgba(61, 43, 31, 0.05);
+  --shadow-card-hover: 0 4px 12px rgba(61, 43, 31, 0.1);
+  --shadow-float: 0 8px 32px rgba(61, 43, 31, 0.12);
+
+  /* Typography */
+  --font-display: 'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.6875rem;     /* 11px */
+  --text-sm: 0.8125rem;     /* 13px */
+  --text-base: 0.9375rem;    /* 15px */
+  --text-md: 1rem;           /* 16px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.3125rem;     /* 21px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Z-index */
+  --z-above: 10;
+  --z-overlay: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* Typography Classes */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-primary-color { color: var(--color-primary); }
+.text-secondary-color { color: var(--color-secondary); }
+.text-warm { color: var(--color-text-primary); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="min-h-screen bg-[#2D1F14] text-white font-body relative overflow-hidden" style="max-width: 375px; margin: 0 auto;">
+
+        <!-- Ambient glow background -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-20 pointer-events-none" style="background: radial-gradient(circle, #E8743B 0%, transparent 70%);"></div>
+
+        <!-- Top bar -->
+        <div class="flex items-center justify-between px-5 pt-4 pb-2 relative z-10">
+            <button data-dom-id="back-recipe" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                <i data-lucide="chevron-left" class="w-5 h-5 text-white"></i>
+            </button>
+            <h1 class="text-lg font-bold text-white tracking-wide">火候监控</h1>
+            <button class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                <i data-lucide="timer" class="w-5 h-5 text-white"></i>
+            </button>
+        </div>
+
+        <!-- Alert banner -->
+        <div class="px-5 mt-3 relative z-10">
+            <div class="alert-glow-bg flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium" style="background: rgba(232, 163, 61, 0.25); color: #F5C49E; border: 1px solid rgba(232, 163, 61, 0.3);">
+                <span class="text-base">&#9888;&#65039;</span>
+                <span>注意：建议转小火</span>
+            </div>
+        </div>
+
+        <!-- Central heat gauge -->
+        <div class="flex flex-col items-center mt-8 relative z-10">
+            <div class="relative w-64 h-64 mx-auto">
+                <!-- Track ring (background) -->
+                <div class="absolute inset-0 rounded-full" style="background: conic-gradient(from 0deg, #4A9D5B 0%, #4A9D5B 30%, #E8A33D 30%, #E8A33D 65%, #D94B4B 65%, #D94B4B 85%, #3D2B1F 85%, #3D2B1F 100%); opacity: 0.2;"></div>
+                <!-- Active gauge ring -->
+                <div class="absolute inset-[12px] rounded-full" style="background: conic-gradient(from 0deg, #4A9D5B 0%, #7FBF5E 15%, #E8A33D 40%, #E8743B 60%, #D94B4B 75%, #3D2B1F 75%, #3D2B1F 100%);"></div>
+                <!-- Inner dark circle -->
+                <div class="absolute inset-[24px] rounded-full bg-[#2D1F14] flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold text-white tracking-wider">中火</span>
+                    <span class="text-sm mt-1" style="color: rgba(255,255,255,0.55);">约160°C</span>
+                </div>
+                <!-- Position indicator dot at ~70% (medium-high) -->
+                <div class="absolute w-4 h-4 rounded-full bg-white shadow-lg" style="top: 50%; left: 50%; transform: rotate(252deg) translateY(-108px) translate(-50%, -50%); box-shadow: 0 0 12px rgba(232, 116, 59, 0.6);"></div>
+            </div>
+            <p class="mt-5 text-sm" style="color: rgba(255,255,255,0.5);">当前火候状态</p>
+        </div>
+
+        <!-- Timer section -->
+        <div class="px-8 mt-7 relative z-10">
+            <div class="text-center">
+                <p class="text-xs mb-1.5" style="color: rgba(255,255,255,0.45);">已烹饪</p>
+                <p class="font-mono text-3xl font-bold text-white tracking-widest" style="font-family: var(--font-mono); letter-spacing: 0.15em;">12:35</p>
+                <!-- Progress bar -->
+                <div class="mt-4 mx-auto w-full h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.1);">
+                    <div class="h-full rounded-full" style="width: 40%; background: linear-gradient(90deg, #E8743B, #F09B6E);"></div>
+                </div>
+                <p class="mt-2.5 text-xs" style="color: rgba(255,255,255,0.4);">预计剩余 18:25</p>
+            </div>
+        </div>
+
+        <!-- Current step card -->
+        <div class="px-5 mt-7 relative z-10">
+            <div class="rounded-2xl p-5" style="background: rgba(255,255,255,0.95); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <!-- Step indicator -->
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="background: rgba(232, 116, 59, 0.12); color: #E8743B;">步骤 4/4</span>
+                </div>
+                <!-- Step title -->
+                <h2 class="text-base font-bold" style="color: #3D2B1F;">加入番茄块，小火慢炖</h2>
+                <!-- Description -->
+                <p class="text-sm mt-2 leading-relaxed" style="color: #6B5744;">保持小火微沸状态，期间不要频繁开盖</p>
+                <!-- Heat recommendation -->
+                <div class="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-xl" style="background: rgba(232, 116, 59, 0.08);">
+                    <span class="text-sm">&#128293;</span>
+                    <span class="text-sm font-medium" style="color: #E8743B;">建议火候：小火</span>
+                </div>
+                <!-- Complete step button -->
+                <button data-dom-id="complete-step" class="w-full mt-4 py-3 rounded-full text-white text-sm font-bold transition-all active:scale-95" style="background: linear-gradient(135deg, #E8743B, #C45E2A); box-shadow: 0 4px 12px rgba(232, 116, 59, 0.35);">
+                    完成此步骤
+                </button>
+            </div>
+        </div>
+
+        <!-- Step progress dots -->
+        <div class="flex items-center justify-center gap-3 mt-5 relative z-10">
+            <div class="w-2.5 h-2.5 rounded-full" style="background: #E8743B;"></div>
+            <div class="w-2.5 h-2.5 rounded-full" style="background: #E8743B;"></div>
+            <div class="w-2.5 h-2.5 rounded-full" style="background: #E8743B;"></div>
+            <div class="w-2.5 h-2.5 rounded-full" style="border: 2px solid rgba(232, 116, 59, 0.5); background: transparent;"></div>
+        </div>
+
+        <!-- Floating controls -->
+        <div class="px-5 mt-6 pb-10 flex gap-3 relative z-10">
+            <button class="flex-1 py-3 rounded-full text-sm font-medium transition-all active:scale-95" style="background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.15);">
+                <span class="flex items-center justify-center gap-2">
+                    <i data-lucide="pause" class="w-4 h-4"></i>
+                    暂停计时
+                </span>
+            </button>
+            <button data-dom-id="cta-finish-cooking" class="flex-1 py-3 rounded-full text-sm font-medium transition-all active:scale-95" style="background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15);">
+                <span class="flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    完成烹饪
+                </span>
+            </button>
+        </div>
+
+    </main>
+    <style>
+        @keyframes alertGlow {
+            0%, 100% {
+                box-shadow: 0 0 8px rgba(232, 163, 61, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(232, 163, 61, 0.55);
+            }
+        }
+        .alert-glow-bg {
+            animation: alertGlow 2s ease-in-out infinite;
+        }
+    </style>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

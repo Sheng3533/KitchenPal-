@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wi-Fi / 网络图标（矢量），用于网络配置入口 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M1,9 L3,11 C7.97,6.03 16.03,6.03 21,11 L23,9 C16.93,2.93 7.08,2.93 1,9 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,19 C11.17,19 10.42,18.66 9.88,18.12 L12,20 L14.12,18.12 C13.58,18.66 12.83,19 12,19 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,13 L7,15 C9.76,12.24 14.24,12.24 17,15 L19,13 C15.14,9.14 8.86,9.14 5,13 Z" />
+</vector>

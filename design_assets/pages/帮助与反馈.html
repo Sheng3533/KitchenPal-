@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助与反馈</title>
+    <style id="theme-vars">
+/* AI Kitchen Assistant - Warm Natural Style */
+:root {
+  /* Brand Primary - Warm Orange */
+  --color-primary: #E8743B;
+  --color-primary-light: #F09B6E;
+  --color-primary-lighter: #F5C49E;
+  --color-primary-lightest: #FBE8D6;
+  --color-primary-dark: #C45E2A;
+  --color-primary-darker: #9A4A20;
+
+  /* Brand Secondary - Warm Brown */
+  --color-secondary: #8B5E3C;
+  --color-secondary-light: #B07D55;
+  --color-secondary-lighter: #D4A87A;
+
+  /* Neutrals - Warm Toned */
+  --color-bg: #FEFAF5;
+  --color-bg-warm: #FFF8F0;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFCF8;
+  --color-surface-overlay: #F5EDE4;
+  --color-border: #E8DDD0;
+  --color-border-light: #F0E8DE;
+  --color-text-primary: #3D2B1F;
+  --color-text-secondary: #6B5744;
+  --color-text-tertiary: #9A8B7A;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+
+  /* State Colors */
+  --state-success: #4A9D5B;
+  --state-success-bg: #E8F5EA;
+  --state-warning: #E8A33D;
+  --state-warning-bg: #FFF4E0;
+  --state-error: #D94B4B;
+  --state-error-bg: #FDE8E8;
+  --state-info: #5B8EC9;
+  --state-info-bg: #E8F0FA;
+
+  /* Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - surface-first, subtle */
+  --shadow-sm: 0 1px 3px rgba(61, 43, 31, 0.04);
+  --shadow-md: 0 2px 8px rgba(61, 43, 31, 0.06);
+  --shadow-lg: 0 4px 16px rgba(61, 43, 31, 0.08);
+  --shadow-card: 0 1px 4px rgba(61, 43, 31, 0.05);
+  --shadow-card-hover: 0 4px 12px rgba(61, 43, 31, 0.1);
+  --shadow-float: 0 8px 32px rgba(61, 43, 31, 0.12);
+
+  /* Typography */
+  --font-display: 'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.6875rem;     /* 11px */
+  --text-sm: 0.8125rem;     /* 13px */
+  --text-base: 0.9375rem;    /* 15px */
+  --text-md: 1rem;           /* 16px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.3125rem;     /* 21px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Z-index */
+  --z-above: 10;
+  --z-overlay: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* Typography Classes */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-primary-color { color: var(--color-primary); }
+.text-secondary-color { color: var(--color-secondary); }
+.text-warm { color: var(--color-text-primary); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="min-h-screen" style="background: var(--color-bg);">
+
+      <!-- Top Bar -->
+      <header class="sticky top-0 z-10 px-4 pt-3 pb-3 flex items-center gap-3" style="background: var(--color-bg);">
+        <button data-dom-id="back-help" class="flex items-center justify-center w-9 h-9 rounded-xl" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+          <i data-lucide="arrow-left" class="w-5 h-5" style="color: var(--color-text-primary);"></i>
+        </button>
+        <h1 class="text-lg font-semibold" style="color: var(--color-text-primary); font-family: var(--font-body);">帮助与反馈</h1>
+      </header>
+
+      <div class="px-4 pb-8">
+
+        <!-- Search Bar -->
+        <div class="mt-2 mb-5 relative">
+          <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <i data-lucide="search" class="w-4 h-4" style="color: var(--color-text-tertiary);"></i>
+          </div>
+          <input type="text" placeholder="搜索问题..." class="w-full pl-11 pr-4 py-3 text-sm rounded-full outline-none transition-shadow focus:ring-2" style="background: var(--color-surface); color: var(--color-text-primary); box-shadow: var(--shadow-sm); font-family: var(--font-body); border: 1px solid var(--color-border-light); --tw-ring-color: var(--color-primary-lighter);">
+        </div>
+
+        <!-- FAQ Section -->
+        <section class="mb-6">
+          <h2 class="text-base font-semibold mb-3" style="color: var(--color-text-primary); font-family: var(--font-body);">常见问题</h2>
+          <div class="rounded-xl overflow-hidden" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+
+            <!-- FAQ 1 - Expanded -->
+            <div class="faq-item open">
+              <button class="faq-toggle w-full flex items-center justify-between px-4 py-4 text-left">
+                <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">如何使用AI食材识别？</span>
+                <i data-lucide="chevron-up" class="w-4 h-4 faq-chevron flex-shrink-0" style="color: var(--color-text-tertiary);"></i>
+              </button>
+              <div class="faq-answer px-4 pb-4">
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); font-family: var(--font-body);">打开相机对准食材，AI会自动识别并推荐食谱</p>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light);"></div>
+
+            <!-- FAQ 2 - Collapsed -->
+            <div class="faq-item">
+              <button class="faq-toggle w-full flex items-center justify-between px-4 py-4 text-left">
+                <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">火候提醒准确吗？</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 faq-chevron flex-shrink-0" style="color: var(--color-text-tertiary);"></i>
+              </button>
+              <div class="faq-answer px-4 pb-4 hidden">
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); font-family: var(--font-body);">基于AI算法和传感器数据，准确率超过95%</p>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light);"></div>
+
+            <!-- FAQ 3 - Collapsed -->
+            <div class="faq-item">
+              <button class="faq-toggle w-full flex items-center justify-between px-4 py-4 text-left">
+                <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">如何收藏食谱？</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 faq-chevron flex-shrink-0" style="color: var(--color-text-tertiary);"></i>
+              </button>
+              <div class="faq-answer px-4 pb-4 hidden">
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); font-family: var(--font-body);">在食谱详情页点击右上角的收藏图标即可，收藏的食谱可在"我的收藏"中查看</p>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light);"></div>
+
+            <!-- FAQ 4 - Collapsed -->
+            <div class="faq-item">
+              <button class="faq-toggle w-full flex items-center justify-between px-4 py-4 text-left">
+                <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">支持哪些语言？</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 faq-chevron flex-shrink-0" style="color: var(--color-text-tertiary);"></i>
+              </button>
+              <div class="faq-answer px-4 pb-4 hidden">
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); font-family: var(--font-body);">目前支持中文、英语、日语、韩语等12种语言，后续会持续增加更多语言支持</p>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light);"></div>
+
+            <!-- FAQ 5 - Collapsed -->
+            <div class="faq-item">
+              <button class="faq-toggle w-full flex items-center justify-between px-4 py-4 text-left">
+                <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">如何导出烹饪记录？</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 faq-chevron flex-shrink-0" style="color: var(--color-text-tertiary);"></i>
+              </button>
+              <div class="faq-answer px-4 pb-4 hidden">
+                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary); font-family: var(--font-body);">进入"我的"页面，点击烹饪记录，选择右上角导出按钮，支持PDF和Excel格式</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Quick Actions Section -->
+        <section class="mb-6">
+          <h2 class="text-base font-semibold mb-3" style="color: var(--color-text-primary); font-family: var(--font-body);">快捷操作</h2>
+          <div class="flex gap-3">
+
+            <!-- Action 1: 意见反馈 -->
+            <div class="flex-1 flex flex-col items-center p-4 rounded-xl cursor-pointer transition-shadow" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+              <div class="flex items-center justify-center w-11 h-11 rounded-full mb-3" style="background: var(--color-primary-lightest);">
+                <i data-lucide="message-square" class="w-5 h-5" style="color: var(--color-primary);"></i>
+              </div>
+              <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">意见反馈</span>
+              <span class="text-xs mt-1" style="color: var(--color-text-tertiary); font-family: var(--font-body);">提交建议</span>
+            </div>
+
+            <!-- Action 2: 联系客服 -->
+            <div class="flex-1 flex flex-col items-center p-4 rounded-xl cursor-pointer transition-shadow" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+              <div class="flex items-center justify-center w-11 h-11 rounded-full mb-3" style="background: #EDE3D6;">
+                <i data-lucide="headset" class="w-5 h-5" style="color: var(--color-secondary);"></i>
+              </div>
+              <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">联系客服</span>
+              <span class="text-xs mt-1" style="color: var(--color-text-tertiary); font-family: var(--font-body);">在线咨询</span>
+            </div>
+
+            <!-- Action 3: 使用教程 -->
+            <div class="flex-1 flex flex-col items-center p-4 rounded-xl cursor-pointer transition-shadow" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+              <div class="flex items-center justify-center w-11 h-11 rounded-full mb-3" style="background: var(--color-surface-overlay);">
+                <i data-lucide="play-circle" class="w-5 h-5" style="color: var(--color-secondary-light);"></i>
+              </div>
+              <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">使用教程</span>
+              <span class="text-xs mt-1" style="color: var(--color-text-tertiary); font-family: var(--font-body);">视频指南</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- App Info Section -->
+        <section class="mb-6">
+          <h2 class="text-base font-semibold mb-3" style="color: var(--color-text-primary); font-family: var(--font-body);">关于</h2>
+          <div class="rounded-xl overflow-hidden" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+
+            <!-- Version Row -->
+            <div class="flex items-center justify-between px-4 py-3">
+              <span class="text-sm" style="color: var(--color-text-primary); font-family: var(--font-body);">当前版本 v2.5.0</span>
+              <button class="text-xs font-medium px-3 py-1.5 rounded-full transition-colors" style="color: var(--color-primary); background: var(--color-primary-lightest); font-family: var(--font-body);">检查更新</button>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light); margin: 0 16px;"></div>
+
+            <!-- 用户协议 -->
+            <div class="flex items-center justify-between px-4 py-3 cursor-pointer">
+              <span class="text-sm" style="color: var(--color-text-primary); font-family: var(--font-body);">用户协议</span>
+              <i data-lucide="chevron-right" class="w-4 h-4" style="color: var(--color-text-tertiary);"></i>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light); margin: 0 16px;"></div>
+
+            <!-- 隐私政策 -->
+            <div class="flex items-center justify-between px-4 py-3 cursor-pointer">
+              <span class="text-sm" style="color: var(--color-text-primary); font-family: var(--font-body);">隐私政策</span>
+              <i data-lucide="chevron-right" class="w-4 h-4" style="color: var(--color-text-tertiary);"></i>
+            </div>
+
+            <div style="height: 1px; background: var(--color-border-light); margin: 0 16px;"></div>
+
+            <!-- 开源许可 -->
+            <div class="flex items-center justify-between px-4 py-3 cursor-pointer">
+              <span class="text-sm" style="color: var(--color-text-primary); font-family: var(--font-body);">开源许可</span>
+              <i data-lucide="chevron-right" class="w-4 h-4" style="color: var(--color-text-tertiary);"></i>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Social/Feedback Card -->
+        <section>
+          <div class="rounded-xl p-5 text-center" style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <i data-lucide="heart" class="w-5 h-5" style="color: var(--color-primary);"></i>
+              <span class="text-sm font-medium" style="color: var(--color-text-primary); font-family: var(--font-body);">觉得好用？分享给朋友吧</span>
+            </div>
+            <button class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-colors" style="border: 1.5px solid var(--color-primary); color: var(--color-primary); background: transparent; font-family: var(--font-body);">
+              <i data-lucide="share-2" class="w-4 h-4"></i>
+              分享给朋友
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <script>
+      // FAQ toggle functionality
+      document.querySelectorAll('.faq-item').forEach(item => {
+        // Initialize: first FAQ is open
+        if (!item.classList.contains('open')) {
+          const answer = item.querySelector('.faq-answer');
+          if (answer && !answer.classList.contains('hidden')) {
+            answer.classList.add('hidden');
+          }
+        }
+      });
+
+      document.querySelectorAll('.faq-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.closest('.faq-item');
+          const answer = item.querySelector('.faq-answer');
+          const chevron = btn.querySelector('.faq-chevron');
+          const isOpen = item.classList.contains('open');
+
+          if (isOpen) {
+            answer.classList.add('hidden');
+            item.classList.remove('open');
+            chevron.setAttribute('data-lucide', 'chevron-down');
+          } else {
+            answer.classList.remove('hidden');
+            item.classList.add('open');
+            chevron.setAttribute('data-lucide', 'chevron-up');
+          }
+
+          lucide.createIcons();
+        });
+      });
+    </script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
